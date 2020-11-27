@@ -1,12 +1,18 @@
-﻿using System;
+﻿using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
+using OpenFTTH.SearchIndexer.Internal;
 
 namespace OpenFTTH.SearchIndexer
 {
     class Program
     {
-        static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            using (var host = HostConfig.Configure())
+            {
+                await host.StartAsync();
+                await host.WaitForShutdownAsync();
+            }
         }
     }
 }
