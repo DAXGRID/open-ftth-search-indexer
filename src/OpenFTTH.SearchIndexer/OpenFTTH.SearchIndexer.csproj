@@ -8,6 +8,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
+    <PackageReference Include="System.Json" Version="4.7.1" />
+    <PackageReference Include="System.Text.Json" Version="5.0.0" />
+    <PackageReference Include="Topos" Version="0.0.88" />
     <PackageReference Include="Typesense" Version="0.1.0" />
   </ItemGroup>
 
