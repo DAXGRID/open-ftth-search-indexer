@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Typesense;
 using Typesense.Setup;
+using OpenFTTH.SearchIndexer.Address;
 
 namespace OpenFTTH.SearchIndexer.Internal
 {
@@ -26,6 +27,7 @@ namespace OpenFTTH.SearchIndexer.Internal
                     options.ApiKey = "";
                     options.Nodes = new List<Node>();
                 });
+                services.AddScoped<IAddressConsumer,AddressConsumer>();
             });
         }
     }
