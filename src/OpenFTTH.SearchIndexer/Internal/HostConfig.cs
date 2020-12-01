@@ -33,7 +33,6 @@ namespace OpenFTTH.SearchIndexer.Internal
                     options.Nodes.Add(node);
                 });
                 services.AddScoped<IAddressConsumer,AddressConsumer>();
-                services.AddScoped<ITypesenseClient,Client>();
             });
         }
     }
