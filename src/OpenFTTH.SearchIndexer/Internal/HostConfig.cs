@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Typesense;
 using Typesense.Setup;
-using OpenFTTH.SearchIndexer.Address;
+using OpenFTTH.SearchIndexer.Consumer;
 
 namespace OpenFTTH.SearchIndexer.Internal
 {

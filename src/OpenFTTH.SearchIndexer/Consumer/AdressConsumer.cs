@@ -8,15 +8,20 @@ using OpenFTTH.SearchIndexer.Serialization;
 using Typesense;
 using Microsoft.Extensions.DependencyInjection;
 using Typesense.Setup;
+using OpenFTTH.SearchIndexer.Model;
 
-namespace OpenFTTH.SearchIndexer.Address
+namespace OpenFTTH.SearchIndexer.Consumer
 {
     public class AddressConsumer : IAddressConsumer
     {
         private IDisposable _consumer;
         private List<IDisposable> _consumers = new List<IDisposable>();
+        private ITypesenseClient _client;
 
-
+        public  AddressConsumer(ITypesenseClient client)
+        {
+            _client = client;
+        }
 
         public void Subscribe()
         {

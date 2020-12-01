@@ -1,6 +1,6 @@
 using System;
 
-namespace OpenFTTH.SearchIndexer.Address
+namespace OpenFTTH.SearchIndexer.Consumer
 {
     public interface IAddressConsumer : IDisposable
     {

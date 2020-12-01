@@ -1,4 +1,4 @@
-namespace OpenFTTH.SearchIndexer.Address
+namespace OpenFTTH.SearchIndexer.Model
 {
     public class Address
     {

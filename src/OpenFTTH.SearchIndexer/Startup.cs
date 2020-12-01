@@ -2,7 +2,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
-using OpenFTTH.SearchIndexer.Address;
+using OpenFTTH.SearchIndexer.Consumer;
 using System;
 
 namespace OpenFTTH.SearchIndexer
@@ -39,7 +39,7 @@ namespace OpenFTTH.SearchIndexer
 
         private void OnStarted()
         {
-            
+            // Call interface that creates the schemas.
             _consumer.Subscribe();
             // Start the kafka consumer
 
