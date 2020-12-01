@@ -15,6 +15,7 @@ namespace OpenFTTH.SearchIndexer.Address
 
         public void Subscribe()
         {
+            Console.WriteLine("here&now");
             var list = new List<JsonObject>();
             var kafka = new KafkaSetting();
             kafka.DatafordelereTopic = "DAR";
@@ -30,7 +31,6 @@ namespace OpenFTTH.SearchIndexer.Address
                        {
                            foreach(var message in messages)
                            {
-                               Console.WriteLine("here");
                                if(message.Body is JsonObject)
                                {
                                    Console.WriteLine(message.Body.ToString());
@@ -43,7 +43,7 @@ namespace OpenFTTH.SearchIndexer.Address
 
         public void Dispose()
         {
-           // _consumers.ForEach(x => x.Dispose());
+            _consumers.ForEach(x => x.Dispose());
         }
     }
 }

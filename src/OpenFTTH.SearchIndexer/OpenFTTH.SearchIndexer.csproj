@@ -12,7 +12,7 @@
     <PackageReference Include="System.Text.Json" Version="5.0.0" />
     <PackageReference Include="Topos" Version="0.0.88" />
     <PackageReference Include="Topos.Kafka" Version="0.0.88" />
-    <PackageReference Include="Typesense" Version="0.1.0" />
+    <PackageReference Include="Typesense" Version="1.1.0" />
   </ItemGroup>
 
 </Project>

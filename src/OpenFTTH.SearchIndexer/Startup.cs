@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using OpenFTTH.SearchIndexer.Address;
+using System;
 
 namespace OpenFTTH.SearchIndexer
 {
@@ -38,6 +39,7 @@ namespace OpenFTTH.SearchIndexer
 
         private void OnStarted()
         {
+            
             _consumer.Subscribe();
             // Start the kafka consumer
 
@@ -45,6 +47,7 @@ namespace OpenFTTH.SearchIndexer
 
         private void OnStopped()
         {
+            _consumer.Dispose();
             // Dispose
         }
     }

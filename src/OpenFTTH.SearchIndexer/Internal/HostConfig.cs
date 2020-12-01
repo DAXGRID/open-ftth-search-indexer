@@ -12,20 +12,25 @@ namespace OpenFTTH.SearchIndexer.Internal
         public static IHost Configure()
         {
             var hostBuilder = new HostBuilder();
-
+            ConfigureServices(hostBuilder);
 
             return hostBuilder.Build();
         }
 
         private static void ConfigureServices(IHostBuilder hostBuilder)
         {
+            var node = new Node();
+            node.Host = "localhost";
+            node.Port = "8108";
+            node.Protocol = "http";
             hostBuilder.ConfigureServices((hostContext, services) =>
             {
                 services.AddHostedService<Startup>();
                 services.AddTypesenseClient(options =>
                 {
-                    options.ApiKey = "";
+                    options.ApiKey = "Hu52dwsas2AdxdE";
                     options.Nodes = new List<Node>();
+                    options.Nodes.Add(node);
                 });
                 services.AddScoped<IAddressConsumer,AddressConsumer>();
             });

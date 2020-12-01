@@ -2,6 +2,7 @@
 using System;
 using System.Text;
 using Topos.Serialization;
+using System.Json;
 
 namespace  OpenFTTH.SearchIndexer.Serialization
 {
@@ -17,7 +18,7 @@ namespace  OpenFTTH.SearchIndexer.Serialization
 
             var messageBody = Encoding.UTF8.GetString(message.Body, 0, message.Body.Length);
 
-            var eventObject = JObject.Parse(messageBody);
+            var eventObject = JsonObject.Parse(messageBody);
 
             return new ReceivedLogicalMessage(message.Headers, eventObject, message.Position);
         }
