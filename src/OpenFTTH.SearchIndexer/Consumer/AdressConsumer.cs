@@ -25,21 +25,6 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         public void Subscribe()
         {
-
-            var provider = new ServiceCollection()
-             .AddTypesenseClient(config =>
-       {
-           config.ApiKey = "Hu52dwsas2AdxdE";
-           config.Nodes = new List<Node>
-      {
-            new Node
-            {
-                Host = "localhost",
-                Port = "8108", Protocol = "http"
-            }
-      };
-       }).BuildServiceProvider();
-            var typesenseClient = provider.GetService<ITypesenseClient>();
             var adresseList = new List<Address>();
 
 
@@ -58,12 +43,14 @@ namespace OpenFTTH.SearchIndexer.Consumer
             var list = new List<JsonObject>();
 
             var kafka = new KafkaSetting();
-            typesenseClient.CreateCollection(schema);
-            var retrieveCollections = typesenseClient.RetrieveCollections();
+            _client.CreateCollection(schema);
+            var retrieveCollections = _client.RetrieveCollections();
 
             kafka.DatafordelereTopic = "DAR";
             kafka.Server = "localhost:9092";
             kafka.PositionFilePath = "/tmp/";
+            JsonValue c = "";
+            JsonValue d = "";
 
 
             var consumer = _consumer = Configure
@@ -81,6 +68,8 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                   var obj = JsonObject.Parse(message.Body.ToString());
                                   if (obj["type"] == "HusnummerList")
                                   {
+                                       c = obj;
+                                      /*
                                       var adressObj = ConvertIntoAdress(obj);
 
                                       adresseList.Add(adressObj);
@@ -90,13 +79,23 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                           await typesenseClient.ImportDocuments<Address>("AdressesImport", adresseList, 40, ImportType.Create);
                                           adresseList.Clear();
                                       }
+                                      */
                                   }
+                                  else if(obj["type"] == "AdresseList")
+                                  {
+                                       d = obj;
+                                  }
+                                  Console.WriteLine("This is the adresseList" + d.ToString());
+                                  Console.WriteLine("This is the hussnummerList" + c.ToString());
+
+                                  /*
                                   await typesenseClient.ImportDocuments<Address>("AdressesImport", adresseList, 40, ImportType.Create);
                                   adresseList.Clear();
+                                  */
                               }
                           }
                       }).Start();
-
+            /*          
             Console.WriteLine($"Retrieve collections: {JsonSerializer.Serialize(retrieveCollections)}");
             var doc = typesenseClient.RetrieveDocument<Address>("Addresses", "1");
             var search = new SearchParameters
@@ -107,6 +106,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
             var q = typesenseClient.Search<Address>("Addresses", search);
 
             //Console.WriteLine(JsonSerializer.Serialize(q));
+            */
         }
 
         public Address ConvertIntoAdress(JsonValue obj)
@@ -114,9 +114,9 @@ namespace OpenFTTH.SearchIndexer.Consumer
             var address = new Address
             {
                 id_lokalId = (string)obj["id_lokalId"],
-                houseNumber = (string)obj["houseNumberText"],
+                houseNumberText = (string)obj["houseNumberText"],
                 status = (int)obj["status"],
-                accessAddress = (string)obj["accessAddressDescription"]
+                accessAddressDescription = (string)obj["accessAddressDescription"]
             };
 
             return address;
