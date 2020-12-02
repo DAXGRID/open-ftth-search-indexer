@@ -18,7 +18,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
         private List<IDisposable> _consumers = new List<IDisposable>();
         private ITypesenseClient _client;
 
-        public  AddressConsumer(ITypesenseClient client)
+        public AddressConsumer(ITypesenseClient client)
         {
             _client = client;
         }
@@ -68,7 +68,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                   var obj = JsonObject.Parse(message.Body.ToString());
                                   if (obj["type"] == "HusnummerList")
                                   {
-                                       c = obj;
+                                      c = obj;
                                       /*
                                       var adressObj = ConvertIntoAdress(obj);
 
@@ -81,9 +81,9 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                       }
                                       */
                                   }
-                                  else if(obj["type"] == "AdresseList")
+                                  else if (obj["type"] == "AdresseList")
                                   {
-                                       d = obj;
+                                      d = obj;
                                   }
                                   Console.WriteLine("This is the adresseList" + d.ToString());
                                   Console.WriteLine("This is the hussnummerList" + c.ToString());
@@ -114,9 +114,17 @@ namespace OpenFTTH.SearchIndexer.Consumer
             var address = new Address
             {
                 id_lokalId = (string)obj["id_lokalId"],
+                door = (string)obj["door"],
+                doorPoint = (string)obj["doorPoint"],
+                floor = (string)obj["floor"],
+                unitAddressDescription = (string)obj["unitAddressDescription"],
+                houseNumberId = (string)obj["houseNumberId"],
+                houseNumberDirection = (string)obj["houseNumberDirection"],
                 houseNumberText = (string)obj["houseNumberText"],
-                status = (int)obj["status"],
-                accessAddressDescription = (string)obj["accessAddressDescription"]
+                position = (string)obj["position"],
+                accessAddressDescription = (string)obj["accessAddressDescription"],
+                status = (int)obj["status"]
+
             };
 
             return address;
