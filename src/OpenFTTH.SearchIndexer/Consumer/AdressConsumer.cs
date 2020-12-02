@@ -45,56 +45,11 @@ namespace OpenFTTH.SearchIndexer.Consumer
             var kafka = new KafkaSetting();
             _client.CreateCollection(schema);
             var retrieveCollections = _client.RetrieveCollections();
-
-            kafka.DatafordelereTopic = "DAR";
-            kafka.Server = "localhost:9092";
-            kafka.PositionFilePath = "/tmp/";
-            JsonValue c = "";
-            JsonValue d = "";
+            Consume();
 
 
-            var consumer = _consumer = Configure
-                      .Consumer(kafka.DatafordelereTopic, c => c.UseKafka(kafka.Server))
-                      .Serialization(s => s.DatafordelerEventDeserializer())
-                      .Topics(t => t.Subscribe(kafka.DatafordelereTopic))
-                      .Positions(p => p.StoreInFileSystem(kafka.PositionFilePath))
-                      .Handle(async (messages, context, token) =>
-                      {
-                          foreach (var message in messages)
-                          {
-                              if (message.Body is JsonObject)
-                              {
 
-                                  var obj = JsonObject.Parse(message.Body.ToString());
-                                  if (obj["type"] == "HusnummerList")
-                                  {
-                                      c = obj;
-                                      /*
-                                      var adressObj = ConvertIntoAdress(obj);
 
-                                      adresseList.Add(adressObj);
-
-                                      if (adresseList.Count > 40)
-                                      {
-                                          await typesenseClient.ImportDocuments<Address>("AdressesImport", adresseList, 40, ImportType.Create);
-                                          adresseList.Clear();
-                                      }
-                                      */
-                                  }
-                                  else if (obj["type"] == "AdresseList")
-                                  {
-                                      d = obj;
-                                  }
-                                  Console.WriteLine("This is the adresseList" + d.ToString());
-                                  Console.WriteLine("This is the hussnummerList" + c.ToString());
-
-                                  /*
-                                  await typesenseClient.ImportDocuments<Address>("AdressesImport", adresseList, 40, ImportType.Create);
-                                  adresseList.Clear();
-                                  */
-                              }
-                          }
-                      }).Start();
             /*          
             Console.WriteLine($"Retrieve collections: {JsonSerializer.Serialize(retrieveCollections)}");
             var doc = typesenseClient.RetrieveDocument<Address>("Addresses", "1");
@@ -118,7 +73,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
                 doorPoint = (string)obj["doorPoint"],
                 floor = (string)obj["floor"],
                 unitAddressDescription = (string)obj["unitAddressDescription"],
-                houseNumberId = (string)obj["houseNumberId"],
+                houseNumberId = (string)obj["houseNumber"],
                 houseNumberDirection = (string)obj["houseNumberDirection"],
                 houseNumberText = (string)obj["houseNumberText"],
                 position = (string)obj["position"],
@@ -130,6 +85,98 @@ namespace OpenFTTH.SearchIndexer.Consumer
             return address;
 
         }
+
+        public void Consume()
+        {
+            var kafka = new KafkaSetting();
+            kafka.DatafordelereTopic = "DAR";
+            kafka.Server = "localhost:9092";
+            kafka.PositionFilePath = "/tmp/";
+            JsonValue c = "";
+            JsonValue d = "";
+
+            var AdresseList = new List<JsonValue>();
+            var hussnumerList = new List<JsonValue>();
+            var newItems = new List<JsonValue>();
+            var typesenSeItems = new List<Address>();
+
+
+
+
+            var consumer = _consumer = Configure
+                      .Consumer(kafka.DatafordelereTopic, c => c.UseKafka(kafka.Server))
+                      .Serialization(s => s.DatafordelerEventDeserializer())
+                      .Topics(t => t.Subscribe(kafka.DatafordelereTopic))
+                      .Positions(p => p.StoreInFileSystem(kafka.PositionFilePath))
+                      .Handle(async (messages, context, token) =>
+                      {
+                          try
+                          {
+                              foreach (var message in messages)
+                              {
+
+                                  if (message.Body is JsonObject)
+                                  {
+
+                                      var obj = JsonObject.Parse(message.Body.ToString());
+                                      if (obj["type"] == "AdresseList")
+                                      {
+
+                                          AdresseList.Add(obj);
+
+                                      }
+                                      else if (obj["type"] == "HusnummerList")
+                                      {
+                                          hussnumerList.Add(obj);
+
+
+                                      }
+
+                                  }
+
+                              }
+                          }
+                          finally
+                          {
+                              newItems = MergeLists(AdresseList, hussnumerList);
+                              foreach(var item in newItems)
+                              {
+                                  typesenSeItems.Add(ConvertIntoAdress(item));
+                              }
+                              Console.WriteLine("This is the number of items " + typesenSeItems.Count);
+                              await _client.ImportDocuments<Address>("Adresses",typesenSeItems,1000,ImportType.Create);
+
+                          }
+
+                      }).Start();
+
+
+
+        }
+
+        public List<JsonValue> MergeLists(List<JsonValue> addresseItems, List<JsonValue> hussnummerItems)
+        {
+            var newAddresseItems = new List<JsonValue>();
+            foreach (var adress in addresseItems)
+            {
+                //Console.WriteLine("This is the adress " + adress.ToString());
+                foreach (var house in hussnummerItems)
+                {
+                    //Console.WriteLine("This is the house " + house.ToString());
+                    if (adress["houseNumber"].Equals(house["id_lokalId"]))
+                    {
+                        adress["houseNumberDirection"] = house["houseNumberDirection"];
+                        adress["houseNumberText"] = house["houseNumberText"];
+                        adress["position"] = house["position"];
+                        adress["accessAddressDescription"] = house["accessAddressDescription"];
+
+                        newAddresseItems.Add(adress);
+                    }
+                }
+            }
+            return newAddresseItems;
+        }
+
 
         public void Dispose()
         {
