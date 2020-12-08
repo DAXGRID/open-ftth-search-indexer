@@ -45,8 +45,6 @@ namespace OpenFTTH.SearchIndexer.Consumer
                 DefaultSortingField = "status"
             };
             var list = new List<JsonObject>();
-
-            var kafka = new KafkaSetting();
             _client.CreateCollection(schema);
             var retrieveCollections = _client.RetrieveCollections();
             Consume();
@@ -76,7 +74,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         public void Consume()
         {
-            var kafka = new KafkaSetting();
+            var kafka = new KafkaSettings();
             kafka.DatafordelereTopic = "DAR";
             kafka.Server = "localhost:9092";
             kafka.PositionFilePath = "/tmp/";
@@ -124,12 +122,12 @@ namespace OpenFTTH.SearchIndexer.Consumer
                           finally
                           {
                               newItems = MergeLists(AdresseList, hussnumerList);
-                              foreach(var item in newItems)
+                              foreach (var item in newItems)
                               {
                                   typesenSeItems.Add(ConvertIntoAdress(item));
                               }
                               Console.WriteLine("This is the number of items " + typesenSeItems.Count);
-                              await _client.ImportDocuments<Address>("Adresses",typesenSeItems,1000,ImportType.Create);
+                              await _client.ImportDocuments<Address>("Adresses", typesenSeItems, 1000, ImportType.Create);
 
                           }
 

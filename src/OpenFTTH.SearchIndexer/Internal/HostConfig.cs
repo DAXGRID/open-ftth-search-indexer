@@ -4,6 +4,9 @@ using Microsoft.Extensions.Hosting;
 using Typesense;
 using Typesense.Setup;
 using OpenFTTH.SearchIndexer.Consumer;
+using Microsoft.Extensions.Configuration;
+using System.IO;
+using OpenFTTH.SearchIndexer.Config;
 
 namespace OpenFTTH.SearchIndexer.Internal
 {
@@ -12,12 +15,24 @@ namespace OpenFTTH.SearchIndexer.Internal
         public static IHost Configure()
         {
             var hostBuilder = new HostBuilder();
-            ConfigureServices(hostBuilder);
+            var builder = new ConfigurationBuilder();
+            var configuration = SetupAppSettings(builder);
+
+            ConfigureServices(hostBuilder, configuration);
 
             return hostBuilder.Build();
         }
 
-        private static void ConfigureServices(IHostBuilder hostBuilder)
+        private static IConfigurationRoot SetupAppSettings(ConfigurationBuilder builder)
+        {
+            return builder
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .Build();
+        }
+
+        private static void ConfigureServices(IHostBuilder hostBuilder, IConfigurationRoot configuration)
         {
             var node = new Node();
             node.Host = "localhost";
@@ -32,7 +47,8 @@ namespace OpenFTTH.SearchIndexer.Internal
                     options.Nodes = new List<Node>();
                     options.Nodes.Add(node);
                 });
-                services.AddScoped<IAddressConsumer,AddressConsumer>();
+                services.AddScoped<IAddressConsumer, AddressConsumer>();
+                services.Configure<KafkaSettings>(configuration.GetSection("KafkaSettings"));
             });
         }
     }
