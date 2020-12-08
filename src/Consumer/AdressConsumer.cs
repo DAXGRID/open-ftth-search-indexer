@@ -7,6 +7,7 @@ using OpenFTTH.SearchIndexer.Serialization;
 using Typesense;
 using OpenFTTH.SearchIndexer.Model;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace OpenFTTH.SearchIndexer.Consumer
 {
@@ -48,8 +49,18 @@ namespace OpenFTTH.SearchIndexer.Consumer
             };
             var list = new List<JsonObject>();
             _client.CreateCollection(schema);
-            var retrieveCollections = _client.RetrieveCollections();
+            var retrieveCollections = _client.RetrieveCollection("Addresses");
+
+            _logger.LogInformation("This is the request " + retrieveCollections.Result.ToString());
             Consume();
+            /*
+            var result =  _client.Search<Address>("Addresses",new SearchParameters{
+                Text = "Horsens",
+                QueryBy = "accessAddressDescription"
+            });
+            */
+
+            //_logger.LogInformation(result.ToString());
         }
 
         public Address ConvertIntoAdress(JsonValue obj)
@@ -74,7 +85,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         }
 
-        public void Consume()
+        private void Consume()
         {
             var kafka = new KafkaSettings();
             kafka.DatafordelereTopic = "DAR";
@@ -85,8 +96,6 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
             var AdresseList = new List<JsonValue>();
             var hussnumerList = new List<JsonValue>();
-            var newItems = new List<JsonValue>();
-            var typesenSeItems = new List<Address>();
 
             var consumer = _consumer = Configure
                       .Consumer(kafka.DatafordelereTopic, c => c.UseKafka(kafka.Server))
@@ -95,71 +104,82 @@ namespace OpenFTTH.SearchIndexer.Consumer
                       .Positions(p => p.StoreInFileSystem(kafka.PositionFilePath))
                       .Handle(async (messages, context, token) =>
                       {
-                          try
+                          foreach (var message in messages)
                           {
-                              foreach (var message in messages)
+                              if (message.Body is JsonObject)
                               {
 
-                                  if (message.Body is JsonObject)
+                                  var obj = JsonObject.Parse(message.Body.ToString());
+                                  if (obj["type"] == "AdresseList")
                                   {
 
-                                      var obj = JsonObject.Parse(message.Body.ToString());
-                                      if (obj["type"] == "AdresseList")
-                                      {
-
-                                          AdresseList.Add(obj);
-
-                                      }
-                                      else if (obj["type"] == "HusnummerList")
-                                      {
-                                          hussnumerList.Add(obj);
-
-
-                                      }
+                                      AdresseList.Add(obj);
 
                                   }
-
+                                  else if (obj["type"] == "HusnummerList")
+                                  {
+                                      hussnumerList.Add(obj);
+                                  }
                               }
                           }
-                          finally
+
+                          var typesenSeItems = MergeLists(AdresseList, hussnumerList);
+                          AdresseList.Clear();
+                          hussnumerList.Clear();
+                          if (typesenSeItems.Count > 0)
                           {
-                              newItems = MergeLists(AdresseList, hussnumerList);
-                              foreach (var item in newItems)
+
+                              foreach (var item in typesenSeItems)
                               {
-                                  typesenSeItems.Add(ConvertIntoAdress(item));
+                                  _logger.LogInformation(item.ToString());
+                                  await _client.CreateDocument<Address>("Addresses", item);
                               }
-                              _logger.LogInformation("This is the number of items " + typesenSeItems.Count);
-                              await _client.ImportDocuments<Address>("Adresses", typesenSeItems, 1000, ImportType.Create);
 
                           }
+
+
+
 
                       }).Start();
-
-
-
         }
 
-        public List<JsonValue> MergeLists(List<JsonValue> addresseItems, List<JsonValue> hussnummerItems)
+        public List<Address> MergeLists(List<JsonValue> addresseItems, List<JsonValue> hussnummerItems)
         {
-            var newAddresseItems = new List<JsonValue>();
+            _logger.LogInformation("it got here");
+            _logger.LogInformation("It is" + hussnummerItems.Count);
+            var houseNumberLookup = hussnummerItems.Select(x => new KeyValuePair<string, JsonValue>(x["id_lokalId"], x)).ToDictionary(x => x.Key, x => x.Value);
+
+            var newAddresseItems = new List<Address>();
+            var newAdress = new Address();
             foreach (var adress in addresseItems)
             {
-                foreach (var house in hussnummerItems)
+                var addressHouseNumber = (string)adress["houseNumber"];
+                if (houseNumberLookup.TryGetValue(addressHouseNumber, out var house))
                 {
-                    if (adress["houseNumber"].Equals(house["id_lokalId"]))
+                    var newAddres = new Address
                     {
-                        adress["houseNumberDirection"] = house["houseNumberDirection"];
-                        adress["houseNumberText"] = house["houseNumberText"];
-                        adress["position"] = house["position"];
-                        adress["accessAddressDescription"] = house["accessAddressDescription"];
+                        id_lokalId = adress["id_lokalId"],
+                        door = adress["door"],
+                        doorPoint = adress["doorpoint"],
+                        floor = adress["floor"],
+                        unitAddressDescription = adress["unitAddressDescription"],
+                        houseNumberId = house["id_lokalId"],
+                        houseNumberDirection = house["houseNumberDirection"],
+                        houseNumberText = house["houseNumberText"],
+                        position = house["position"],
+                        status = adress["status"],
+                        accessAddressDescription = house["accessAddressDescription"]
 
-                        newAddresseItems.Add(adress);
-                    }
+                    };
+                    _logger.LogInformation(newAddres.ToString());
+                    newAddresseItems.Add(newAddres);
+
                 }
+
             }
+            _logger.LogInformation("THe number of items" + newAddresseItems.Count());
             return newAddresseItems;
         }
-
 
         public void Dispose()
         {

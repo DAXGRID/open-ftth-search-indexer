@@ -21,7 +21,7 @@ namespace OpenFTTH.SearchIndexer
         public Task StartAsync(CancellationToken cancellationToken)
         {
             _applicationLifetime.ApplicationStarted.Register(OnStarted);
-            //_applicationLifetime.ApplicationStopping.Register(OnStopped);
+            _applicationLifetime.ApplicationStopping.Register(OnStopped);
 
             MarkAsReady();
             return Task.CompletedTask;
