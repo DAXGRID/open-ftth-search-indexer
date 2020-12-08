@@ -1,13 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Json;
-using System.Text.Json;
 using Topos.Config;
 using OpenFTTH.SearchIndexer.Config;
 using OpenFTTH.SearchIndexer.Serialization;
 using Typesense;
-using Microsoft.Extensions.DependencyInjection;
-using Typesense.Setup;
 using OpenFTTH.SearchIndexer.Model;
 
 namespace OpenFTTH.SearchIndexer.Consumer
@@ -34,9 +31,16 @@ namespace OpenFTTH.SearchIndexer.Consumer
                 Fields = new List<Field>
                 {
                     new Field("id_lokalId", "string", false),
-                    new Field("houseNumber", "string", false),
-                    new Field("status","int32",false),
-                    new Field("accessAddress", "string", false),
+                    new Field("door", "string", false),
+                    new Field("doorPoint", "string", false),
+                    new Field("floor", "string", false),
+                    new Field("unitAddressDescription", "string", false),
+                    new Field("houseNumberId", "string", false),
+                    new Field("houseNumberDirection", "string", false),
+                    new Field("houseNumberText", "string", false),
+                    new Field("position", "string", false),
+                    new Field("accessAddressDescription", "string", false),
+                    new Field("status","int32",false)
                 },
                 DefaultSortingField = "status"
             };
@@ -46,22 +50,6 @@ namespace OpenFTTH.SearchIndexer.Consumer
             _client.CreateCollection(schema);
             var retrieveCollections = _client.RetrieveCollections();
             Consume();
-
-
-
-
-            /*          
-            Console.WriteLine($"Retrieve collections: {JsonSerializer.Serialize(retrieveCollections)}");
-            var doc = typesenseClient.RetrieveDocument<Address>("Addresses", "1");
-            var search = new SearchParameters
-            {
-                Text = "Smed",
-                QueryBy = "accessAddress"
-            };
-            var q = typesenseClient.Search<Address>("Addresses", search);
-
-            //Console.WriteLine(JsonSerializer.Serialize(q));
-            */
         }
 
         public Address ConvertIntoAdress(JsonValue obj)
@@ -99,9 +87,6 @@ namespace OpenFTTH.SearchIndexer.Consumer
             var hussnumerList = new List<JsonValue>();
             var newItems = new List<JsonValue>();
             var typesenSeItems = new List<Address>();
-
-
-
 
             var consumer = _consumer = Configure
                       .Consumer(kafka.DatafordelereTopic, c => c.UseKafka(kafka.Server))
@@ -159,10 +144,8 @@ namespace OpenFTTH.SearchIndexer.Consumer
             var newAddresseItems = new List<JsonValue>();
             foreach (var adress in addresseItems)
             {
-                //Console.WriteLine("This is the adress " + adress.ToString());
                 foreach (var house in hussnummerItems)
                 {
-                    //Console.WriteLine("This is the house " + house.ToString());
                     if (adress["houseNumber"].Equals(house["id_lokalId"]))
                     {
                         adress["houseNumberDirection"] = house["houseNumberDirection"];

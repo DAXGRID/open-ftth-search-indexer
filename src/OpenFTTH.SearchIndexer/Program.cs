@@ -11,7 +11,6 @@ namespace OpenFTTH.SearchIndexer
         {
             using (var host = HostConfig.Configure())
             {
-                Console.WriteLine("started");
                 await host.StartAsync();
                 await host.WaitForShutdownAsync();
             }
