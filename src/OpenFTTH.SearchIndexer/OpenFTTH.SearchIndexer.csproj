@@ -8,6 +8,11 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
+    <PackageReference Include="Serilog" Version="2.10.1-dev-01256" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="3.0.2-dev-10281" />
+    <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.1-dev-00940" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="3.2.0-dev-00264" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="4.0.0-dev-00839" />
     <PackageReference Include="System.Json" Version="4.7.1" />
     <PackageReference Include="System.Text.Json" Version="5.0.0" />
     <PackageReference Include="Topos" Version="0.0.88" />

@@ -6,6 +6,7 @@ using OpenFTTH.SearchIndexer.Config;
 using OpenFTTH.SearchIndexer.Serialization;
 using Typesense;
 using OpenFTTH.SearchIndexer.Model;
+using Microsoft.Extensions.Logging;
 
 namespace OpenFTTH.SearchIndexer.Consumer
 {
@@ -15,16 +16,17 @@ namespace OpenFTTH.SearchIndexer.Consumer
         private List<IDisposable> _consumers = new List<IDisposable>();
         private ITypesenseClient _client;
 
-        public AddressConsumer(ITypesenseClient client)
+        private ILogger<AddressConsumer> _logger;
+
+        public AddressConsumer(ITypesenseClient client, ILogger<AddressConsumer> logger)
         {
             _client = client;
+            _logger = logger;
         }
 
         public void Subscribe()
         {
             var adresseList = new List<Address>();
-
-
             var schema = new Schema
             {
                 Name = "Addresses",
@@ -126,7 +128,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
                               {
                                   typesenSeItems.Add(ConvertIntoAdress(item));
                               }
-                              Console.WriteLine("This is the number of items " + typesenSeItems.Count);
+                              _logger.LogInformation("This is the number of items " + typesenSeItems.Count);
                               await _client.ImportDocuments<Address>("Adresses", typesenSeItems, 1000, ImportType.Create);
 
                           }

@@ -7,6 +7,8 @@ using OpenFTTH.SearchIndexer.Consumer;
 using Microsoft.Extensions.Configuration;
 using System.IO;
 using OpenFTTH.SearchIndexer.Config;
+using Serilog;
+using Serilog.Formatting.Compact;
 
 namespace OpenFTTH.SearchIndexer.Internal
 {
@@ -49,6 +51,19 @@ namespace OpenFTTH.SearchIndexer.Internal
                 });
                 services.AddScoped<IAddressConsumer, AddressConsumer>();
                 services.Configure<KafkaSettings>(configuration.GetSection("KafkaSettings"));
+                services.AddLogging(configure =>
+                {
+                    var loggingConfiguration = new ConfigurationBuilder()
+                  .AddEnvironmentVariables().Build();
+
+                    var logger = new LoggerConfiguration()
+                        .ReadFrom.Configuration(loggingConfiguration)
+                        .Enrich.FromLogContext()
+                        .WriteTo.Console(new CompactJsonFormatter())
+                        .CreateLogger();
+
+                    configure.AddSerilog(logger, true);
+                });
             });
         }
     }
