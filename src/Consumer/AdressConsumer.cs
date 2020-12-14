@@ -8,6 +8,9 @@ using Typesense;
 using OpenFTTH.SearchIndexer.Model;
 using Microsoft.Extensions.Logging;
 using System.Linq;
+using OpenFTTH.SearchIndexer.Database;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace OpenFTTH.SearchIndexer.Consumer
 {
@@ -17,7 +20,13 @@ namespace OpenFTTH.SearchIndexer.Consumer
         private List<IDisposable> _consumers = new List<IDisposable>();
         private ITypesenseClient _client;
 
+        private readonly KafkaSetting _kafkaSetting;
+        private readonly DatabaseSetting _databaseSetting;
+
         private ILogger<AddressConsumer> _logger;
+        private readonly IPostgresWriter _postgresWriter;
+
+        private Dictionary<string, List<JsonObject>> _topicList = new Dictionary<string, List<JsonObject>>();
 
         public AddressConsumer(ITypesenseClient client, ILogger<AddressConsumer> logger)
         {
@@ -48,19 +57,8 @@ namespace OpenFTTH.SearchIndexer.Consumer
                 DefaultSortingField = "status"
             };
             var list = new List<JsonObject>();
-            //_client.CreateCollection(schema);
-            //var retrieveCollections = _client.RetrieveCollection("Addresses");
-
-            //_logger.LogInformation("This is the request " + retrieveCollections.Result.ToString());
             Consume();
-            /*
-            var result =  _client.Search<Address>("Addresses",new SearchParameters{
-                Text = "Horsens",
-                QueryBy = "accessAddressDescription"
-            });
-            */
 
-            //_logger.LogInformation(result.ToString());
         }
 
         public Address ConvertIntoAdress(JsonValue obj)
@@ -85,6 +83,21 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         }
 
+
+        private List<JsonObject> CheckObjectType(List<JsonObject> items, string tableName)
+        {
+            var batch = new List<JsonObject>();
+
+            foreach (var item in items)
+            {
+                if (item["type"].ToString() == tableName)
+                {
+                    batch.Add(item);
+                }
+            }
+
+            return batch;
+        }
         private void Consume()
         {
             var kafka = new KafkaSetting();
@@ -96,23 +109,63 @@ namespace OpenFTTH.SearchIndexer.Consumer
             var AdresseList = new List<JsonValue>();
             var hussnumerList = new List<JsonValue>();
 
+            DateTime waitStartTimestamp = DateTime.UtcNow;
+
             var consumer = _consumer = Configure
                       .Consumer(kafka.DatafordelereTopic, c => c.UseKafka(kafka.Server))
                       .Serialization(s => s.DatafordelerEventDeserializer())
                       .Topics(t => t.Subscribe(kafka.DatafordelereTopic))
                       .Positions(p => p.StoreInFileSystem(kafka.PositionFilePath))
-                      .Handle(async (messages, context, token) =>
+                      .Handle(async(messages, context, token) =>
                       {
+
                           foreach (var message in messages)
                           {
                               if (message.Body is JsonObject)
                               {
+
+                                  var messageTime = DateTime.UtcNow;
+
+                                  TimeSpan timespan = waitStartTimestamp - messageTime;
+
+                                  if (timespan.TotalSeconds > 10)
+                                  {
+                                      _logger.LogInformation("It worked");
+                                  }
+
                               }
-                          }                          
+
+                          }
 
                       }).Start();
+
+            _logger.LogInformation("It got here");
         }
-        
+
+        public void DatabaseInsert(Topos.Serialization.ReceivedLogicalMessage message, string topic)
+        {
+            if (!_topicList.ContainsKey(topic))
+            {
+                _topicList.Add(topic, new List<JsonObject>());
+                _topicList[topic].Add((JsonObject)message.Body);
+            }
+            else
+            {
+                _topicList[topic].Add((JsonObject)message.Body);
+            }
+
+            foreach (var obj in _databaseSetting.Values)
+            {
+                var tableName = obj.Key;
+                var columns = obj.Value.Split(",");
+                var batch = CheckObjectType(_topicList[topic], tableName);
+                _postgresWriter.AddToPSQL(batch, tableName, columns);
+            }
+            _topicList[topic].Clear();
+
+
+        }
+
 
         public void Dispose()
         {
