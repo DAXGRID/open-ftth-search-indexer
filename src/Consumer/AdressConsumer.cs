@@ -48,10 +48,10 @@ namespace OpenFTTH.SearchIndexer.Consumer
                 DefaultSortingField = "status"
             };
             var list = new List<JsonObject>();
-            _client.CreateCollection(schema);
-            var retrieveCollections = _client.RetrieveCollection("Addresses");
+            //_client.CreateCollection(schema);
+            //var retrieveCollections = _client.RetrieveCollection("Addresses");
 
-            _logger.LogInformation("This is the request " + retrieveCollections.Result.ToString());
+            //_logger.LogInformation("This is the request " + retrieveCollections.Result.ToString());
             Consume();
             /*
             var result =  _client.Search<Address>("Addresses",new SearchParameters{
@@ -87,12 +87,11 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         private void Consume()
         {
-            var kafka = new KafkaSettings();
+            var kafka = new KafkaSetting();
             kafka.DatafordelereTopic = "DAR";
             kafka.Server = "localhost:9092";
             kafka.PositionFilePath = "/tmp/";
-            JsonValue c = "";
-            JsonValue d = "";
+
 
             var AdresseList = new List<JsonValue>();
             var hussnumerList = new List<JsonValue>();
@@ -108,78 +107,12 @@ namespace OpenFTTH.SearchIndexer.Consumer
                           {
                               if (message.Body is JsonObject)
                               {
-
-                                  var obj = JsonObject.Parse(message.Body.ToString());
-                                  if (obj["type"] == "AdresseList")
-                                  {
-
-                                      AdresseList.Add(obj);
-
-                                  }
-                                  else if (obj["type"] == "HusnummerList")
-                                  {
-                                      hussnumerList.Add(obj);
-                                  }
                               }
-                          }
-
-                          var typesenSeItems = MergeLists(AdresseList, hussnumerList);
-                          AdresseList.Clear();
-                          hussnumerList.Clear();
-                          if (typesenSeItems.Count > 0)
-                          {
-
-                              foreach (var item in typesenSeItems)
-                              {
-                                  _logger.LogInformation(item.ToString());
-                                  await _client.CreateDocument<Address>("Addresses", item);
-                              }
-
-                          }
-
-
-
+                          }                          
 
                       }).Start();
         }
-
-        public List<Address> MergeLists(List<JsonValue> addresseItems, List<JsonValue> hussnummerItems)
-        {
-            _logger.LogInformation("it got here");
-            _logger.LogInformation("It is" + hussnummerItems.Count);
-            var houseNumberLookup = hussnummerItems.Select(x => new KeyValuePair<string, JsonValue>(x["id_lokalId"], x)).ToDictionary(x => x.Key, x => x.Value);
-
-            var newAddresseItems = new List<Address>();
-            var newAdress = new Address();
-            foreach (var adress in addresseItems)
-            {
-                var addressHouseNumber = (string)adress["houseNumber"];
-                if (houseNumberLookup.TryGetValue(addressHouseNumber, out var house))
-                {
-                    var newAddres = new Address
-                    {
-                        id_lokalId = adress["id_lokalId"],
-                        door = adress["door"],
-                        doorPoint = adress["doorpoint"],
-                        floor = adress["floor"],
-                        unitAddressDescription = adress["unitAddressDescription"],
-                        houseNumberId = house["id_lokalId"],
-                        houseNumberDirection = house["houseNumberDirection"],
-                        houseNumberText = house["houseNumberText"],
-                        position = house["position"],
-                        status = adress["status"],
-                        accessAddressDescription = house["accessAddressDescription"]
-
-                    };
-                    _logger.LogInformation(newAddres.ToString());
-                    newAddresseItems.Add(newAddres);
-
-                }
-
-            }
-            _logger.LogInformation("THe number of items" + newAddresseItems.Count());
-            return newAddresseItems;
-        }
+        
 
         public void Dispose()
         {

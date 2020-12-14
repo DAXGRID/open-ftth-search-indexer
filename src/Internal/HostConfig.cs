@@ -50,7 +50,7 @@ namespace OpenFTTH.SearchIndexer.Internal
                     options.Nodes.Add(node);
                 });
                 services.AddScoped<IAddressConsumer, AddressConsumer>();
-                services.Configure<KafkaSettings>(configuration.GetSection("KafkaSettings"));
+                services.Configure<KafkaSetting>(configuration.GetSection("KafkaSettings"));
                 services.AddLogging(configure =>
                 {
                     var loggingConfiguration = new ConfigurationBuilder()

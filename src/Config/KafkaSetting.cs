@@ -1,7 +1,7 @@
 
 namespace  OpenFTTH.SearchIndexer.Config
 {
-     public class KafkaSettings
+     public class KafkaSetting
     {
         public string Server { get; set; }
         public string PositionFilePath { get; set; }
