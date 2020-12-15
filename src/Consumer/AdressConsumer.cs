@@ -63,7 +63,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         private void CheckBulkStatus(object source, ElapsedEventArgs e)
         {
-            var elapsedTime = _lastMessageReceivedBulk - DateTime.UtcNow;
+            var elapsedTime =  DateTime.UtcNow -_lastMessageReceivedBulk;
 
             _logger.LogInformation($"Elapsed time: {elapsedTime.TotalSeconds}");
 
@@ -210,8 +210,10 @@ namespace OpenFTTH.SearchIndexer.Consumer
         public void Dispose()
         {
             _consumers.ForEach(x => x.Dispose());
-            if(!(_bulkInsertTimer is null))
+            if(!(_bulkInsertTimer is null)) {
+                _bulkInsertTimer.Stop();
                 _bulkInsertTimer.Dispose();
+            }
         }
     }
 }

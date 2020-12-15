@@ -11,6 +11,7 @@ namespace OpenFTTH.SearchIndexer
     {
         private readonly IHostApplicationLifetime _applicationLifetime;
         private IAddressConsumer _consumer;
+        private bool _isStopping;
 
         public Startup(IHostApplicationLifetime applicationLifetime, IAddressConsumer consumer)
         {
@@ -44,8 +45,11 @@ namespace OpenFTTH.SearchIndexer
             if (bulkSetup)
             {
                 _consumer.SubscribeBulk();
-                while (!_consumer.IsBulkFinished())
-                    Thread.Sleep(1);
+                while (!_consumer.IsBulkFinished() && !_isStopping) {
+                    Thread.Sleep(1000);
+                    Console.WriteLine("Tesd");
+                }
+
 
                 _consumer.Dispose();
             }
@@ -57,6 +61,7 @@ namespace OpenFTTH.SearchIndexer
 
         private void OnStopped()
         {
+            _isStopping = true;
             _consumer.Dispose();
             // Dispose
         }
