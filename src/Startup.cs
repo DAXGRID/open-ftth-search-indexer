@@ -39,10 +39,20 @@ namespace OpenFTTH.SearchIndexer
 
         private void OnStarted()
         {
+            // TODO use enviroment variable
+            var bulkSetup = true;
+            if (bulkSetup)
+            {
+                _consumer.SubscribeBulk();
+                while (!_consumer.IsBulkFinished())
+                    Thread.Sleep(1);
+
+                _consumer.Dispose();
+            }
+
             // Call interface that creates the schemas.
             _consumer.Subscribe();
             // Start the kafka consumer
-
         }
 
         private void OnStopped()
