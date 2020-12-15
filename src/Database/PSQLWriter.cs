@@ -11,7 +11,7 @@ using NetTopologySuite.IO;
 using Npgsql;
 using System.Json;
 
-namespace OpenFTTH.SearchIndexer.Database.Impl
+namespace OpenFTTH.SearchIndexer.Database
 {
     public class PSQLWriter : IPostgresWriter
     {
@@ -32,9 +32,9 @@ namespace OpenFTTH.SearchIndexer.Database.Impl
             NpgsqlConnection.GlobalTypeMapper.UseNetTopologySuite();
         }
 
-        public void AddToPSQL(List<JsonObject> batch, string topic, string[] columns)
+        public void AddToPSQL(List<JsonObject> batch, string topic, string[] columns, string textConnection)
         {
-            using (NpgsqlConnection connection = new NpgsqlConnection(_databaseSetting.ConnectionString))
+            using (NpgsqlConnection connection = new NpgsqlConnection(textConnection))
             {
                 connection.Open();
                 createTemporaryTable(topic + "_temp", columns, connection);
@@ -42,8 +42,9 @@ namespace OpenFTTH.SearchIndexer.Database.Impl
 
                 UpsertData(batch, topic + "_temp", columns, connection);
                 InsertOnConflict(topic + "_temp", topic, columns, connection);
-
             }
+
+            _logger.LogInformation("Wrote in the database");
         }
 
         private void createTemporaryTable(string topic, string[] columns, NpgsqlConnection connection)

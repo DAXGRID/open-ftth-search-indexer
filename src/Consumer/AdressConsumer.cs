@@ -9,6 +9,7 @@ using OpenFTTH.SearchIndexer.Model;
 using Microsoft.Extensions.Logging;
 using OpenFTTH.SearchIndexer.Database;
 using System.Timers;
+using System.Threading.Tasks;
 
 namespace OpenFTTH.SearchIndexer.Consumer
 {
@@ -29,10 +30,11 @@ namespace OpenFTTH.SearchIndexer.Consumer
         private DateTime _lastMessageReceivedBulk;
         private Timer _bulkInsertTimer;
 
-        public AddressConsumer(ITypesenseClient client, ILogger<AddressConsumer> logger)
+        public AddressConsumer(ITypesenseClient client, ILogger<AddressConsumer> logger, IPostgresWriter postgresWriter)
         {
             _client = client;
             _logger = logger;
+            _postgresWriter = postgresWriter;
         }
 
         public void Subscribe()
@@ -58,12 +60,12 @@ namespace OpenFTTH.SearchIndexer.Consumer
                 DefaultSortingField = "status"
             };
             var list = new List<JsonObject>();
-            Consume();
+            //Consume();
         }
 
         private void CheckBulkStatus(object source, ElapsedEventArgs e)
         {
-            var elapsedTime =  DateTime.UtcNow -_lastMessageReceivedBulk;
+            var elapsedTime = DateTime.UtcNow - _lastMessageReceivedBulk;
 
             _logger.LogInformation($"Elapsed time: {elapsedTime.TotalSeconds}");
 
@@ -79,6 +81,14 @@ namespace OpenFTTH.SearchIndexer.Consumer
             kafka.DatafordelereTopic = "DAR";
             kafka.Server = "localhost:9092";
             kafka.PositionFilePath = "/tmp/";
+
+            var database = new DatabaseSetting();
+            database.ConnectionString = "Host=172.20.0.4;Username=postgres;Password=postgres;Database=gis";
+            Dictionary<string, string> adress = new Dictionary<string, string>{
+                {"AdresseList","id_lokalId,door,doorPoint,floor,unitAddressDescription,houseNumber"},
+                {"HusnummerList","id_lokalId,status,houseNumberText,houseNumberDirection,accessAddressDescription,position"}
+            };
+            database.Values = adress;
 
             var AdresseList = new List<JsonValue>();
             var hussnumerList = new List<JsonValue>();
@@ -100,6 +110,36 @@ namespace OpenFTTH.SearchIndexer.Consumer
                               _lastMessageReceivedBulk = DateTime.UtcNow;
                               if (message.Body is JsonObject)
                               {
+
+                                  if (!_topicList.ContainsKey(kafka.DatafordelereTopic))
+                                  {
+                                      _topicList.Add(kafka.DatafordelereTopic, new List<JsonObject>());
+                                      _topicList[kafka.DatafordelereTopic].Add((JsonObject)message.Body);
+                                  }
+                                  else
+                                  {
+
+                                      _topicList[kafka.DatafordelereTopic].Add((JsonObject)message.Body);
+                                  }
+
+                                  if (_topicList[kafka.DatafordelereTopic].Count >= 10000)
+                                  {
+
+                                      foreach (var obj in database.Values)
+                                      {
+
+                                          var tableName = obj.Key;
+
+                                          var columns = obj.Value.Split(",");
+
+                                          var batch = CheckObjectType(_topicList[kafka.DatafordelereTopic], tableName);
+                                          if (batch != null)
+                                          {
+                                              _postgresWriter.AddToPSQL(batch, tableName, columns, database.ConnectionString);
+                                          }
+                                      }
+                                      _topicList[kafka.DatafordelereTopic].Clear();
+                                  }
                               }
                           }
                       }).Start();
@@ -136,7 +176,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
             foreach (var item in items)
             {
-                if (item["type"].ToString() == tableName)
+                if (item["type"] == tableName)
                 {
                     batch.Add(item);
                 }
@@ -201,7 +241,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
                 var tableName = obj.Key;
                 var columns = obj.Value.Split(",");
                 var batch = CheckObjectType(_topicList[topic], tableName);
-                _postgresWriter.AddToPSQL(batch, tableName, columns);
+                // _postgresWriter.AddToPSQL(batch, tableName, columns);
             }
 
             _topicList[topic].Clear();
@@ -210,7 +250,8 @@ namespace OpenFTTH.SearchIndexer.Consumer
         public void Dispose()
         {
             _consumers.ForEach(x => x.Dispose());
-            if(!(_bulkInsertTimer is null)) {
+            if (!(_bulkInsertTimer is null))
+            {
                 _bulkInsertTimer.Stop();
                 _bulkInsertTimer.Dispose();
             }

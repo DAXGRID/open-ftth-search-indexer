@@ -9,6 +9,7 @@ using System.IO;
 using OpenFTTH.SearchIndexer.Config;
 using Serilog;
 using Serilog.Formatting.Compact;
+using OpenFTTH.SearchIndexer.Database;
 
 namespace OpenFTTH.SearchIndexer.Internal
 {
@@ -50,6 +51,7 @@ namespace OpenFTTH.SearchIndexer.Internal
                     options.Nodes.Add(node);
                 });
                 services.AddScoped<IAddressConsumer, AddressConsumer>();
+                services.AddScoped<IPostgresWriter,PSQLWriter>();
                 services.Configure<KafkaSetting>(configuration.GetSection("KafkaSettings"));
                 services.AddLogging(configure =>
                 {

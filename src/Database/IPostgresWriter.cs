@@ -7,7 +7,7 @@ namespace OpenFTTH.SearchIndexer.Database
 {
     public interface IPostgresWriter
     {
-        void AddToPSQL(List<JsonObject> batch, string topic, string[] columns);
+        void AddToPSQL(List<JsonObject> batch, string topic, string[] columns, string textConnection);
 
     }
 
