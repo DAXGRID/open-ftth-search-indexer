@@ -78,6 +78,18 @@ namespace OpenFTTH.SearchIndexer.Database
             _logger.LogInformation("Temporary Table " + topic + " created");
         }
 
+        public void JoinTables(string adresseColummn, string houseColumn, NpgsqlConnection connection)
+        {
+            var tableCommandText = @$"SELECT * FROM adresselist INNER JOIN husnummerlist ON (adresselist.{adresseColummn} = husnummerlist.{houseColumn});";
+            using (NpgsqlCommand command = new NpgsqlCommand(tableCommandText, connection))
+            {
+                command.ExecuteNonQuery();
+            }
+
+            _logger.LogInformation("Tables were joined");
+            
+        }
+
         private void InsertOnConflict(string tempTable, string table, string[] columns, NpgsqlConnection conn)
         {
             string id;
