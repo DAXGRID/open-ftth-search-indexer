@@ -10,6 +10,7 @@ using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
 using Npgsql;
 using System.Json;
+using OpenFTTH.SearchIndexer.Model;
 
 namespace OpenFTTH.SearchIndexer.Database
 {
@@ -42,6 +43,7 @@ namespace OpenFTTH.SearchIndexer.Database
 
                 UpsertData(batch, topic + "_temp", columns, connection);
                 InsertOnConflict(topic + "_temp", topic, columns, connection);
+                connection.Close();
             }
 
             _logger.LogInformation("Wrote in the database");
@@ -78,15 +80,42 @@ namespace OpenFTTH.SearchIndexer.Database
             _logger.LogInformation("Temporary Table " + topic + " created");
         }
 
-        public void JoinTables(string adresseColummn, string houseColumn, NpgsqlConnection connection)
+        public List<Address> JoinTables(string adresseColummn, string houseColumn, string textConnection)
         {
+            List<Address> items = new List<Address>();
+            var stringList = new List<string>();
+            var geometryFactory = new GeometryFactory();
+            var rdr = new WKTWriter();
+            
             var tableCommandText = @$"SELECT * FROM adresselist INNER JOIN husnummerlist ON (adresselist.{adresseColummn} = husnummerlist.{houseColumn});";
-            using (NpgsqlCommand command = new NpgsqlCommand(tableCommandText, connection))
+            using (NpgsqlConnection connection = new NpgsqlConnection(textConnection))
             {
-                command.ExecuteNonQuery();
-            }
+                connection.Open();
+                using (NpgsqlCommand command = new NpgsqlCommand(tableCommandText, connection))
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var adress = new Address{
+                            id_lokalId = reader.GetString(0),
+                            door = reader.GetValue(1).ToString(),
+                            doorPoint = reader.GetValue(2).ToString(),
+                            floor = reader.GetValue(3).ToString(),
+                            unitAddressDescription = reader.GetString(4),
+                            houseNumberId = reader.GetString(5),
+                            status = Int32.Parse(reader.GetValue(7).ToString()),
+                            houseNumberText = reader.GetString(8),
+                            houseNumberDirection = reader.GetString(9),
+                            accessAddressDescription = reader.GetString(10),
+                            position = rdr.Write((Geometry)reader.GetValue(11))
+                        };
+                        items.Add(adress);
 
+                    }
+                }
+            }
             _logger.LogInformation("Tables were joined");
+             return items;
             
         }
 
@@ -144,10 +173,10 @@ namespace OpenFTTH.SearchIndexer.Database
                     writer.StartRow();
                     foreach (var column in columns)
                     {
-                        if (column == "position" )
+                        if (column == "position")
                         {
                             // TODO add environment variable
-                            rdr.DefaultSRID = _databaseSetting.GeoSRID;
+                            rdr.DefaultSRID = 25832;
                             var c = rdr.Read((string)document[column]);
                             writer.Write(c);
                         }
@@ -180,7 +209,7 @@ namespace OpenFTTH.SearchIndexer.Database
             foreach (var column in columns)
             {
 
-                if (column == "position" )
+                if (column == "position")
                 {
                     tableColumns.Append(column + " geometry" + ",");
                 }

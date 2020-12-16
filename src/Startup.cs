@@ -44,15 +44,15 @@ namespace OpenFTTH.SearchIndexer
             var bulkSetup = true;
             if (bulkSetup)
             {
-                _consumer.SubscribeBulk();
-                while (!_consumer.IsBulkFinished() && !_isStopping) {
-                    Thread.Sleep(1000);
-                    Console.WriteLine("Tesd");
-                }
-
-
-                _consumer.Dispose();
+                // _consumer.SubscribeBulk();
+                // while (!_consumer.IsBulkFinished() && !_isStopping) {
+                //     Thread.Sleep(1000);
+                //     Console.WriteLine("Tesd");
+                // }
+                // _consumer.Dispose();
+                _consumer.ProcessDataTypesense();
             }
+    
 
             // Call interface that creates the schemas.
             _consumer.Subscribe();

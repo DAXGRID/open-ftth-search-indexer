@@ -83,7 +83,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
             kafka.PositionFilePath = "/tmp/";
 
             var database = new DatabaseSetting();
-            database.ConnectionString = "Host=172.20.0.4;Username=postgres;Password=postgres;Database=gis";
+            database.ConnectionString = "Host=172.18.0.5;Username=postgres;Password=postgres;Database=gis";
             Dictionary<string, string> adress = new Dictionary<string, string>{
                 {"AdresseList","id_lokalId,door,doorPoint,floor,unitAddressDescription,houseNumber"},
                 {"HusnummerList","id_lokalId,status,houseNumberText,houseNumberDirection,accessAddressDescription,position"}
@@ -148,6 +148,12 @@ namespace OpenFTTH.SearchIndexer.Consumer
         public bool IsBulkFinished()
         {
             return _isBulkFinished;
+        }
+
+        public void ProcessDataTypesense()
+        {
+            var typsenseItems = _postgresWriter.JoinTables("houseNumber","id_lokalId","Host=172.18.0.5;Username=postgres;Password=postgres;Database=gis");
+            
         }
 
         public Address ConvertIntoAdress(JsonValue obj)
@@ -224,28 +230,6 @@ namespace OpenFTTH.SearchIndexer.Consumer
             _logger.LogInformation("It got here");
         }
 
-        public void DatabaseInsert(Topos.Serialization.ReceivedLogicalMessage message, string topic)
-        {
-            if (!_topicList.ContainsKey(topic))
-            {
-                _topicList.Add(topic, new List<JsonObject>());
-                _topicList[topic].Add((JsonObject)message.Body);
-            }
-            else
-            {
-                _topicList[topic].Add((JsonObject)message.Body);
-            }
-
-            foreach (var obj in _databaseSetting.Values)
-            {
-                var tableName = obj.Key;
-                var columns = obj.Value.Split(",");
-                var batch = CheckObjectType(_topicList[topic], tableName);
-                // _postgresWriter.AddToPSQL(batch, tableName, columns);
-            }
-
-            _topicList[topic].Clear();
-        }
 
         public void Dispose()
         {
