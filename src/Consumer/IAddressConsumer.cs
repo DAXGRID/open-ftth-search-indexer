@@ -8,5 +8,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
         void SubscribeBulk();
         bool IsBulkFinished();
         void ProcessDataTypesense();
+        void CreateTypesenseSchema();
+        void searchTypesense();
     }
 }

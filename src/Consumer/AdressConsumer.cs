@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Json;
+using System.Text.Json;
 using Topos.Config;
 using OpenFTTH.SearchIndexer.Config;
 using OpenFTTH.SearchIndexer.Serialization;
@@ -40,6 +41,13 @@ namespace OpenFTTH.SearchIndexer.Consumer
         public void Subscribe()
         {
             var adresseList = new List<Address>();
+
+            var list = new List<JsonObject>();
+            //Consume();
+        }
+
+        public void CreateTypesenseSchema()
+        {
             var schema = new Schema
             {
                 Name = "Addresses",
@@ -59,10 +67,9 @@ namespace OpenFTTH.SearchIndexer.Consumer
                 },
                 DefaultSortingField = "status"
             };
-            var list = new List<JsonObject>();
-            //Consume();
-        }
 
+            _client.CreateCollection(schema);
+        }
         private void CheckBulkStatus(object source, ElapsedEventArgs e)
         {
             var elapsedTime = DateTime.UtcNow - _lastMessageReceivedBulk;
@@ -152,8 +159,20 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         public void ProcessDataTypesense()
         {
-            var typsenseItems = _postgresWriter.JoinTables("houseNumber","id_lokalId","Host=172.18.0.5;Username=postgres;Password=postgres;Database=gis");
-            
+            var typsenseItems = _postgresWriter.JoinTables("houseNumber", "id_lokalId", "Host=172.18.0.5;Username=postgres;Password=postgres;Database=gis");
+            _client.ImportDocuments("Addresses",typsenseItems,2000,ImportType.Create);
+
+
+        }
+
+        public void searchTypesense()
+        {
+             //Console.WriteLine($"Retrieve collections: {JsonSerializer.Serialize(retrieveCollections)}");
+            var collectionResult = JsonSerializer.Serialize(_client.RetrieveCollections());
+            //_logger.LogInformation(collectionResult);
+            var searchResult = JsonSerializer.Serialize(_client.Search<Address>("Addresses", new SearchParameters{Text = "smed",QueryBy="accessAddressDescription"}));
+            _logger.LogInformation(searchResult);
+            //_logger.LogInformation(_client.Search<Address>("Addresses", new SearchParameters{Text = "smed",QueryBy="accessAddressDescription"}).ToString());
         }
 
         public Address ConvertIntoAdress(JsonValue obj)

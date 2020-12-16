@@ -41,6 +41,7 @@ namespace OpenFTTH.SearchIndexer
         private void OnStarted()
         {
             // TODO use enviroment variable
+            //_consumer.CreateTypesenseSchema();
             var bulkSetup = true;
             if (bulkSetup)
             {
@@ -50,10 +51,9 @@ namespace OpenFTTH.SearchIndexer
                 //     Console.WriteLine("Tesd");
                 // }
                 // _consumer.Dispose();
-                _consumer.ProcessDataTypesense();
+                //_consumer.ProcessDataTypesense();
             }
-    
-
+            _consumer.searchTypesense();
             // Call interface that creates the schemas.
             _consumer.Subscribe();
             // Start the kafka consumer
