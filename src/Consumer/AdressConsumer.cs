@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using OpenFTTH.SearchIndexer.Database;
 using System.Timers;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace OpenFTTH.SearchIndexer.Consumer
 {
@@ -40,10 +41,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         public void Subscribe()
         {
-            var adresseList = new List<Address>();
-
-            var list = new List<JsonObject>();
-            //Consume();
+            Consume();
         }
 
         public void CreateTypesenseSchema()
@@ -157,43 +155,15 @@ namespace OpenFTTH.SearchIndexer.Consumer
             return _isBulkFinished;
         }
 
-        public void ProcessDataTypesense()
+        public async Task ProcessDataTypesense()
         {
-            var typsenseItems = _postgresWriter.JoinTables("houseNumber", "id_lokalId", "Host=172.18.0.5;Username=postgres;Password=postgres;Database=gis");
-            _client.ImportDocuments("Addresses",typsenseItems,2000,ImportType.Create);
-
+            
+            var typsenseItems = _postgresWriter.JoinTables("housenumber", "id_lokalid", "Host=172.18.0.5;Username=postgres;Password=postgres;Database=gis");
+            await _client.ImportDocuments("Addresses", typsenseItems, typsenseItems.Count, ImportType.Create);
 
         }
 
-        public void searchTypesense()
-        {
-             //Console.WriteLine($"Retrieve collections: {JsonSerializer.Serialize(retrieveCollections)}");
-            var collectionResult = JsonSerializer.Serialize(_client.RetrieveCollections());
-            //_logger.LogInformation(collectionResult);
-            var searchResult = JsonSerializer.Serialize(_client.Search<Address>("Addresses", new SearchParameters{Text = "smed",QueryBy="accessAddressDescription"}));
-            _logger.LogInformation(searchResult);
-            //_logger.LogInformation(_client.Search<Address>("Addresses", new SearchParameters{Text = "smed",QueryBy="accessAddressDescription"}).ToString());
-        }
-
-        public Address ConvertIntoAdress(JsonValue obj)
-        {
-            var address = new Address
-            {
-                id_lokalId = (string)obj["id_lokalId"],
-                door = (string)obj["door"],
-                doorPoint = (string)obj["doorPoint"],
-                floor = (string)obj["floor"],
-                unitAddressDescription = (string)obj["unitAddressDescription"],
-                houseNumberId = (string)obj["houseNumber"],
-                houseNumberDirection = (string)obj["houseNumberDirection"],
-                houseNumberText = (string)obj["houseNumberText"],
-                position = (string)obj["position"],
-                accessAddressDescription = (string)obj["accessAddressDescription"],
-                status = (int)obj["status"]
-            };
-
-            return address;
-        }
+       
 
         private List<JsonObject> CheckObjectType(List<JsonObject> items, string tableName)
         {

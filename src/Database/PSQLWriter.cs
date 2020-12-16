@@ -4,7 +4,6 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Newtonsoft.Json.Linq;
 using System.Linq;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
@@ -87,7 +86,7 @@ namespace OpenFTTH.SearchIndexer.Database
             var geometryFactory = new GeometryFactory();
             var rdr = new WKTWriter();
             
-            var tableCommandText = @$"SELECT * FROM adresselist INNER JOIN husnummerlist ON (adresselist.{adresseColummn} = husnummerlist.{houseColumn});";
+            var tableCommandText = @$"SELECT * FROM adresselist a INNER JOIN husnummerlist h ON (a.{adresseColummn} = h.{houseColumn});";
             using (NpgsqlConnection connection = new NpgsqlConnection(textConnection))
             {
                 connection.Open();

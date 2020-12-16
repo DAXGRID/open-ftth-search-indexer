@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace OpenFTTH.SearchIndexer.Consumer
 {
@@ -7,8 +8,8 @@ namespace OpenFTTH.SearchIndexer.Consumer
         void Subscribe();
         void SubscribeBulk();
         bool IsBulkFinished();
-        void ProcessDataTypesense();
+        Task ProcessDataTypesense();
         void CreateTypesenseSchema();
-        void searchTypesense();
+        
     }
 }
