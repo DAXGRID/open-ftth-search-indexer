@@ -88,10 +88,10 @@ namespace OpenFTTH.SearchIndexer.Consumer
             kafka.PositionFilePath = "/tmp/";
 
             var database = new DatabaseSetting();
-            database.ConnectionString = "Host=172.18.0.5;Username=postgres;Password=postgres;Database=gis";
+            database.ConnectionString = "Host=172.20.0.4;Username=postgres;Password=postgres;Database=gis";
             Dictionary<string, string> adress = new Dictionary<string, string>{
                 {"AdresseList","id_lokalId,door,doorPoint,floor,unitAddressDescription,houseNumber"},
-                {"HusnummerList","id_lokalId,status,houseNumberText,houseNumberDirection,accessAddressDescription,position"}
+                {"HusnummerList","id_lokalId,status,houseNumberText,houseNumberDirection,accessAddressDescription,position,roadName"}
             };
             database.Values = adress;
 
@@ -115,7 +115,6 @@ namespace OpenFTTH.SearchIndexer.Consumer
                               _lastMessageReceivedBulk = DateTime.UtcNow;
                               if (message.Body is JsonObject)
                               {
-
                                   if (!_topicList.ContainsKey(kafka.DatafordelereTopic))
                                   {
                                       _topicList.Add(kafka.DatafordelereTopic, new List<JsonObject>());
@@ -158,7 +157,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
         public async Task ProcessDataTypesense()
         {
             
-            var typsenseItems = _postgresWriter.JoinTables("housenumber", "id_lokalid", "Host=172.18.0.5;Username=postgres;Password=postgres;Database=gis");
+            var typsenseItems = _postgresWriter.JoinTables("housenumber", "id_lokalid", "Host=172.20.0.4;Username=postgres;Password=postgres;Database=gis");
             await _client.ImportDocuments("Addresses", typsenseItems, typsenseItems.Count, ImportType.Create);
 
         }

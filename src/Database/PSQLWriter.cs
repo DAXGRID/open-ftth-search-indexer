@@ -40,7 +40,7 @@ namespace OpenFTTH.SearchIndexer.Database
                 createTemporaryTable(topic + "_temp", columns, connection);
                 createTable(topic, columns, connection);
 
-                UpsertData(batch, topic + "_temp", columns, connection);
+                InsertDataTemporary(batch, topic + "_temp", columns, connection);
                 InsertOnConflict(topic + "_temp", topic, columns, connection);
                 connection.Close();
             }
@@ -149,7 +149,7 @@ namespace OpenFTTH.SearchIndexer.Database
                 command.ExecuteNonQuery();
             }
         }
-        private void UpsertData(List<JsonObject> batch, string topic, string[] columns, NpgsqlConnection conn)
+        private void InsertDataTemporary(List<JsonObject> batch, string topic, string[] columns, NpgsqlConnection conn)
         {
             var tableColumns = new StringBuilder();
             var geometryFactory = new GeometryFactory();
