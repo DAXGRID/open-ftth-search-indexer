@@ -1,17 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Json;
-using System.Text.Json;
 using Topos.Config;
 using OpenFTTH.SearchIndexer.Config;
 using OpenFTTH.SearchIndexer.Serialization;
 using Typesense;
-using OpenFTTH.SearchIndexer.Model;
 using Microsoft.Extensions.Logging;
 using OpenFTTH.SearchIndexer.Database;
 using System.Timers;
 using System.Threading.Tasks;
-using System.IO;
+using Microsoft.Extensions.Options;
 
 namespace OpenFTTH.SearchIndexer.Consumer
 {
@@ -32,11 +30,13 @@ namespace OpenFTTH.SearchIndexer.Consumer
         private DateTime _lastMessageReceivedBulk;
         private Timer _bulkInsertTimer;
 
-        public AddressConsumer(ITypesenseClient client, ILogger<AddressConsumer> logger, IPostgresWriter postgresWriter)
+        public AddressConsumer(ITypesenseClient client, ILogger<AddressConsumer> logger, IPostgresWriter postgresWriter, IOptions<KafkaSetting>  kafkaSetting, IOptions<DatabaseSetting> databaseSetting)
         {
             _client = client;
             _logger = logger;
             _postgresWriter = postgresWriter;
+            _kafkaSetting = kafkaSetting.Value;
+            _databaseSetting = databaseSetting.Value;
         }
 
         public void Subscribe()
@@ -82,18 +82,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         public void SubscribeBulk()
         {
-            var kafka = new KafkaSetting();
-            kafka.DatafordelereTopic = "DAR";
-            kafka.Server = "localhost:9092";
-            kafka.PositionFilePath = "/tmp/";
-
-            var database = new DatabaseSetting();
-            database.ConnectionString = "Host=172.20.0.4;Username=postgres;Password=postgres;Database=gis";
-            Dictionary<string, string> adress = new Dictionary<string, string>{
-                {"AdresseList","id_lokalId,door,doorPoint,floor,unitAddressDescription,houseNumber"},
-                {"HusnummerList","id_lokalId,status,houseNumberText,houseNumberDirection,accessAddressDescription,position,roadName"}
-            };
-            database.Values = adress;
+            _logger.LogInformation("This is the topic" + _kafkaSetting.DatafordelereTopic);
 
             var AdresseList = new List<JsonValue>();
             var hussnumerList = new List<JsonValue>();
@@ -104,10 +93,10 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
             _bulkInsertTimer.Start();
             var consumer = _consumer = Configure
-                      .Consumer(kafka.DatafordelereTopic, c => c.UseKafka(kafka.Server))
+                      .Consumer(_kafkaSetting.DatafordelereTopic, c => c.UseKafka(_kafkaSetting.Server))
                       .Serialization(s => s.DatafordelerEventDeserializer())
-                      .Topics(t => t.Subscribe(kafka.DatafordelereTopic))
-                      .Positions(p => p.StoreInFileSystem(kafka.PositionFilePath))
+                      .Topics(t => t.Subscribe(_kafkaSetting.DatafordelereTopic))
+                      .Positions(p => p.StoreInFileSystem(_kafkaSetting.PositionFilePath))
                       .Handle(async (messages, context, token) =>
                       {
                           foreach (var message in messages)
@@ -115,34 +104,34 @@ namespace OpenFTTH.SearchIndexer.Consumer
                               _lastMessageReceivedBulk = DateTime.UtcNow;
                               if (message.Body is JsonObject)
                               {
-                                  if (!_topicList.ContainsKey(kafka.DatafordelereTopic))
+                                  if (!_topicList.ContainsKey(_kafkaSetting.DatafordelereTopic))
                                   {
-                                      _topicList.Add(kafka.DatafordelereTopic, new List<JsonObject>());
-                                      _topicList[kafka.DatafordelereTopic].Add((JsonObject)message.Body);
+                                      _topicList.Add(_kafkaSetting.DatafordelereTopic, new List<JsonObject>());
+                                      _topicList[_kafkaSetting.DatafordelereTopic].Add((JsonObject)message.Body);
                                   }
                                   else
                                   {
 
-                                      _topicList[kafka.DatafordelereTopic].Add((JsonObject)message.Body);
+                                      _topicList[_kafkaSetting.DatafordelereTopic].Add((JsonObject)message.Body);
                                   }
 
-                                  if (_topicList[kafka.DatafordelereTopic].Count >= 10000)
+                                  if (_topicList[_kafkaSetting.DatafordelereTopic].Count >= 10000)
                                   {
 
-                                      foreach (var obj in database.Values)
+                                      foreach (var obj in _databaseSetting.Values)
                                       {
 
                                           var tableName = obj.Key;
 
                                           var columns = obj.Value.Split(",");
 
-                                          var batch = CheckObjectType(_topicList[kafka.DatafordelereTopic], tableName);
+                                          var batch = CheckObjectType(_topicList[_kafkaSetting.DatafordelereTopic], tableName);
                                           if (batch != null)
                                           {
-                                              _postgresWriter.AddToPSQL(batch, tableName, columns, database.ConnectionString);
+                                              _postgresWriter.AddToPSQL(batch, tableName, columns, _databaseSetting.ConnectionString);
                                           }
                                       }
-                                      _topicList[kafka.DatafordelereTopic].Clear();
+                                      _topicList[_kafkaSetting.DatafordelereTopic].Clear();
                                   }
                               }
                           }
@@ -157,7 +146,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
         public async Task ProcessDataTypesense()
         {
             
-            var typsenseItems = _postgresWriter.JoinTables("housenumber", "id_lokalid", "Host=172.20.0.4;Username=postgres;Password=postgres;Database=gis");
+            var typsenseItems = _postgresWriter.JoinTables("housenumber", "id_lokalid", _databaseSetting.ConnectionString);
             await _client.ImportDocuments("Addresses", typsenseItems, typsenseItems.Count, ImportType.Create);
 
         }

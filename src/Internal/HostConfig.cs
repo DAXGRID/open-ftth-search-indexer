@@ -52,7 +52,12 @@ namespace OpenFTTH.SearchIndexer.Internal
                 });
                 services.AddScoped<IAddressConsumer, AddressConsumer>();
                 services.AddScoped<IPostgresWriter, PSQLWriter>();
-                services.Configure<KafkaSetting>(configuration.GetSection("KafkaSettings"));
+                services.Configure<KafkaSetting>(kafkaSettings =>
+                                                configuration.GetSection("Kafka").Bind(kafkaSettings));
+
+                services.Configure<DatabaseSetting>(databaseSettings =>
+                                              configuration.GetSection("Database").Bind(databaseSettings));
+
                 services.AddLogging(configure =>
                 {
                     var loggingConfiguration = new ConfigurationBuilder()
