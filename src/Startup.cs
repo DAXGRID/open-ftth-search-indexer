@@ -40,19 +40,20 @@ namespace OpenFTTH.SearchIndexer
 
         private void OnStarted()
         {
+            _consumer.SubscribeRouteNetwork();
             // TODO use enviroment variable
-            _consumer.CreateTypesenseSchema();
-            var bulkSetup = true;
-            if (bulkSetup)
-            {
-                _consumer.SubscribeBulk();
-                while (!_consumer.IsBulkFinished() && !_isStopping) {
-                    Thread.Sleep(1000);
-                    Console.WriteLine("Tesd");
-                }
-                _consumer.Dispose();
-                _consumer.ProcessDataTypesense();
-            }
+            // _consumer.CreateTypesenseSchema();
+            // var bulkSetup = true;
+            // if (bulkSetup)
+            // {
+            //     _consumer.SubscribeBulk();
+            //     while (!_consumer.IsBulkFinished() && !_isStopping) {
+            //         Thread.Sleep(1000);
+            //         Console.WriteLine("Tesd");
+            //     }
+            //     _consumer.Dispose();
+            //     _consumer.ProcessDataTypesense();
+            // }
             //_consumer.Subscribe();
             // Start the kafka consumer
         }

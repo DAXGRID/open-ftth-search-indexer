@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Json;
 using Topos.Config;
+using Topos.InMem;
 using OpenFTTH.SearchIndexer.Config;
 using OpenFTTH.SearchIndexer.Serialization;
 using Typesense;
@@ -10,6 +11,13 @@ using OpenFTTH.SearchIndexer.Database;
 using System.Timers;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
+using OpenFTTH.Events.RouteNetwork;
+using DAX.EventProcessing.Dispatcher;
+using DAX.EventProcessing.Dispatcher.Topos;
+using Serilog;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 
 namespace OpenFTTH.SearchIndexer.Consumer
 {
@@ -30,7 +38,9 @@ namespace OpenFTTH.SearchIndexer.Consumer
         private DateTime _lastMessageReceivedBulk;
         private Timer _bulkInsertTimer;
 
-        public AddressConsumer(ITypesenseClient client, ILogger<AddressConsumer> logger, IPostgresWriter postgresWriter, IOptions<KafkaSetting>  kafkaSetting, IOptions<DatabaseSetting> databaseSetting)
+        private IToposTypedEventObservable<RouteNetworkEditOperationOccuredEvent> _eventDispatcher;
+
+        public AddressConsumer(ITypesenseClient client, ILogger<AddressConsumer> logger, IPostgresWriter postgresWriter, IOptions<KafkaSetting> kafkaSetting, IOptions<DatabaseSetting> databaseSetting)
         {
             _client = client;
             _logger = logger;
@@ -138,6 +148,66 @@ namespace OpenFTTH.SearchIndexer.Consumer
                       }).Start();
         }
 
+        public void SubscribeRouteNetwork()
+        {
+
+            JsonConvert.DefaultSettings = (() =>
+            {
+                var settings = new JsonSerializerSettings();
+                settings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+                settings.Converters.Add(new StringEnumConverter());
+                settings.TypeNameHandling = TypeNameHandling.Auto;
+                return settings;
+            });
+
+            var serilogLogger = new LoggerConfiguration()
+                            .MinimumLevel.Debug()
+                            .Enrich.FromLogContext()
+                            .WriteTo.Console()
+                            .CreateLogger();
+
+            var loggerFactory = (ILoggerFactory)new LoggerFactory();
+            loggerFactory.AddSerilog(serilogLogger);
+
+            _eventDispatcher = new ToposTypedEventObservable<RouteNetworkEditOperationOccuredEvent>(loggerFactory.CreateLogger<ToposTypedEventMediator<RouteNetworkEditOperationOccuredEvent>>());
+
+            var kafkaConsumer = _eventDispatcher.Config("route_network_event_" + Guid.NewGuid(), c => c.UseKafka("116.203.155.79:32339")
+                             .WithCertificate("Certificate/hetzner-dev.crt"))
+                             .Positions(p => p.StoreInMemory(new InMemPositionsStorage()))
+                             .Topics(t => t.Subscribe("domain.route-network")) 
+                             .Handle(async (messages, context, token) =>
+                             {
+                                 foreach (var message in messages)
+                                 {
+                                     if (message.Body is RouteNetworkEditOperationOccuredEvent)
+                                     {
+                                         var route = (RouteNetworkEditOperationOccuredEvent)message.Body;
+                                         if (route.RouteNetworkCommands != null)
+                                         {
+                                             foreach (var command in route.RouteNetworkCommands)
+                                             {
+                                                 if (command.RouteNetworkEvents != null)
+                                                 {
+                                                     foreach (var routeNetworkEvent in command.RouteNetworkEvents)
+                                                     {
+                                                          switch (routeNetworkEvent)
+                                                          {
+                                                              case RouteNodeAdded domainEvent:
+                                                              _logger.LogInformation(domainEvent.NodeId.ToString());
+                                                              _logger.LogInformation(domainEvent.NamingInfo.Name.ToString());
+                                                              break;
+                                                          }
+                                                     }
+                                                 }
+                                             }
+                                         }
+                                     }
+                                 }
+                             }).Start();;
+
+
+        }
+
         public bool IsBulkFinished()
         {
             return _isBulkFinished;
@@ -145,13 +215,14 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         public async Task ProcessDataTypesense()
         {
-            
+
             var typsenseItems = _postgresWriter.JoinTables("housenumber", "id_lokalid", _databaseSetting.ConnectionString);
             await _client.ImportDocuments("Addresses", typsenseItems, typsenseItems.Count, ImportType.Create);
-
         }
 
-       
+        
+
+
 
         private List<JsonObject> CheckObjectType(List<JsonObject> items, string tableName)
         {
