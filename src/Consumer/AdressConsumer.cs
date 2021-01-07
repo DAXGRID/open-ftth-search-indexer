@@ -208,6 +208,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         }
 
+
         public bool IsBulkFinished()
         {
             return _isBulkFinished;
@@ -220,7 +221,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
             await _client.ImportDocuments("Addresses", typsenseItems, typsenseItems.Count, ImportType.Create);
         }
 
-        
+
 
 
 
