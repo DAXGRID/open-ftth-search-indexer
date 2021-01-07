@@ -18,6 +18,7 @@ using Serilog;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
+using OpenFTTH.SearchIndexer.Model;
 
 namespace OpenFTTH.SearchIndexer.Consumer
 {
@@ -193,8 +194,11 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                                           switch (routeNetworkEvent)
                                                           {
                                                               case RouteNodeAdded domainEvent:
-                                                              _logger.LogInformation(domainEvent.NodeId.ToString());
-                                                              _logger.LogInformation(domainEvent.NamingInfo.Name.ToString());
+                                                              var node = new RouteNode{
+                                                                  id = domainEvent.NodeId,
+                                                                  name = domainEvent.NamingInfo.Name
+                                                              };
+                                                              await addRouteNodeToTypesense(node);
                                                               break;
                                                           }
                                                      }
@@ -214,15 +218,16 @@ namespace OpenFTTH.SearchIndexer.Consumer
             return _isBulkFinished;
         }
 
+        private async Task addRouteNodeToTypesense(RouteNode node)
+        {
+            await _client.CreateDocument<RouteNode>("RouteNodes",node);
+        }
         public async Task ProcessDataTypesense()
         {
 
             var typsenseItems = _postgresWriter.JoinTables("housenumber", "id_lokalid", _databaseSetting.ConnectionString);
             await _client.ImportDocuments("Addresses", typsenseItems, typsenseItems.Count, ImportType.Create);
         }
-
-
-
 
 
         private List<JsonObject> CheckObjectType(List<JsonObject> items, string tableName)
