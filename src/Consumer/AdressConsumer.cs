@@ -218,7 +218,11 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                                                   incrementalId =incremantalId,
                                                                   name = domainEvent.NamingInfo.Name
                                                               };
-                                                              await addRouteNodeToTypesense(node);
+                                                              await addRouteNode(node);
+                                                              break;
+
+                                                              case RouteNodeMarkedForDeletion domainEvent:
+                                                              await DeleteRouteNode(domainEvent.NodeId);
                                                               break;
                                                           }
                                                      }
@@ -238,10 +242,16 @@ namespace OpenFTTH.SearchIndexer.Consumer
             return _isBulkFinished;
         }
 
-        private async Task addRouteNodeToTypesense(RouteNode node)
+        private async Task addRouteNode(RouteNode node)
         {
             await _client.CreateDocument<RouteNode>("RouteNodes",node);
         }
+
+        private async Task DeleteRouteNode(Guid id)
+        {
+            await _client.DeleteDocument<RouteNode>("RouteNodes",id.ToString());
+        }
+
         public async Task ProcessDataTypesense()
         {
 
