@@ -15,9 +15,6 @@ using OpenFTTH.Events.RouteNetwork;
 using DAX.EventProcessing.Dispatcher;
 using DAX.EventProcessing.Dispatcher.Topos;
 using Serilog;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Serialization;
 using OpenFTTH.SearchIndexer.Model;
 
 namespace OpenFTTH.SearchIndexer.Consumer
@@ -170,14 +167,6 @@ namespace OpenFTTH.SearchIndexer.Consumer
         public void SubscribeRouteNetwork()
         {
             int incremantalId = 0;
-            JsonConvert.DefaultSettings = (() =>
-            {
-                var settings = new JsonSerializerSettings();
-                settings.ContractResolver = new CamelCasePropertyNamesContractResolver();
-                settings.Converters.Add(new StringEnumConverter());
-                settings.TypeNameHandling = TypeNameHandling.Auto;
-                return settings;
-            });
 
             var serilogLogger = new LoggerConfiguration()
                             .MinimumLevel.Debug()

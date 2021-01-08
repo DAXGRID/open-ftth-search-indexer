@@ -10,6 +10,9 @@ using OpenFTTH.SearchIndexer.Config;
 using Serilog;
 using Serilog.Formatting.Compact;
 using OpenFTTH.SearchIndexer.Database;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 
 namespace OpenFTTH.SearchIndexer.Internal
 {
@@ -18,6 +21,7 @@ namespace OpenFTTH.SearchIndexer.Internal
         public static IHost Configure()
         {
             var hostBuilder = new HostBuilder();
+            ConfigureSerialization(hostBuilder);
             var builder = new ConfigurationBuilder();
             var configuration = SetupAppSettings(builder);
 
@@ -33,6 +37,19 @@ namespace OpenFTTH.SearchIndexer.Internal
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()
                 .Build();
+        }
+
+
+        private static void ConfigureSerialization(IHostBuilder hostBuilder)
+        {
+            JsonConvert.DefaultSettings = (() =>
+               {
+                   var settings = new JsonSerializerSettings();
+                   settings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+                   settings.Converters.Add(new StringEnumConverter());
+                   settings.TypeNameHandling = TypeNameHandling.Auto;
+                   return settings;
+               });
         }
 
         private static void ConfigureServices(IHostBuilder hostBuilder, IConfigurationRoot configuration)
