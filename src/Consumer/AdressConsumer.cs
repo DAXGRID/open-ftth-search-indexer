@@ -79,6 +79,24 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
             _client.CreateCollection(schema);
         }
+
+        public void CreateRouteSchema()
+        {
+            var schema = new Schema
+            {
+                Name = "RouteNodes",
+                Fields = new List<Field>
+                {
+                    new Field("id","string",false),
+                    new Field("incrementalId","int32",false),
+                    new Field("name","string",false)
+                },
+                DefaultSortingField = "incrementalId"
+            };
+
+            _client.CreateCollection(schema);
+        }
+
         private void CheckBulkStatus(object source, ElapsedEventArgs e)
         {
             var elapsedTime = DateTime.UtcNow - _lastMessageReceivedBulk;
@@ -151,7 +169,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         public void SubscribeRouteNetwork()
         {
-
+            int incremantalId = 0;
             JsonConvert.DefaultSettings = (() =>
             {
                 var settings = new JsonSerializerSettings();
@@ -194,8 +212,10 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                                           switch (routeNetworkEvent)
                                                           {
                                                               case RouteNodeAdded domainEvent:
+                                                              incremantalId++;
                                                               var node = new RouteNode{
                                                                   id = domainEvent.NodeId,
+                                                                  incrementalId =incremantalId,
                                                                   name = domainEvent.NamingInfo.Name
                                                               };
                                                               await addRouteNodeToTypesense(node);

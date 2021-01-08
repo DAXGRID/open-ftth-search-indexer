@@ -11,6 +11,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
         bool IsBulkFinished();
         Task ProcessDataTypesense();
         void CreateTypesenseSchema();
+        void CreateRouteSchema();
         
     }
 }
