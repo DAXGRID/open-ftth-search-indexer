@@ -106,7 +106,8 @@ namespace OpenFTTH.SearchIndexer.Database
                             houseNumberText = reader.GetString(8),
                             houseNumberDirection = reader.GetString(9),
                             accessAddressDescription = reader.GetString(10),
-                            position = rdr.Write((Geometry)reader.GetValue(11))
+                            position = rdr.Write((Geometry)reader.GetValue(11)),
+                            roadName = reader.GetString(12)
                         };
                         items.Add(adress);
 

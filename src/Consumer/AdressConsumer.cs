@@ -69,6 +69,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
                     new Field("houseNumberText", "string", false),
                     new Field("position", "string", false),
                     new Field("accessAddressDescription", "string", false),
+                    new Field("roadName","string",false),
                     new Field("status","int32",false)
                 },
                 DefaultSortingField = "status"
@@ -179,8 +180,8 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
             _eventDispatcher = new ToposTypedEventObservable<RouteNetworkEditOperationOccuredEvent>(loggerFactory.CreateLogger<ToposTypedEventMediator<RouteNetworkEditOperationOccuredEvent>>());
 
-            var kafkaConsumer = _eventDispatcher.Config("route_network_event_" + Guid.NewGuid(), c => c.UseKafka("116.203.155.79:32339")
-                             .WithCertificate("home/mihai/hetzner-dev.crt"))
+            var kafkaConsumer = _eventDispatcher.Config("route_network_event_" + Guid.NewGuid(), c => c.UseKafka("")
+                             .WithCertificate("/home/mihai/Certificates/hetzner-dev.crt"))
                              .Positions(p => p.StoreInMemory(new InMemPositionsStorage()))
                              .Topics(t => t.Subscribe("domain.route-network"))
                              .Handle(async (messages, context, token) =>
@@ -212,7 +213,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                                                  break;
 
                                                              case RouteNodeMarkedForDeletion domainEvent:
-                                                                 //await DeleteRouteNode(domainEvent.NodeId);
+                                                                 await DeleteRouteNode(domainEvent.NodeId);
                                                                  break;
                                                          }
                                                      }
@@ -244,14 +245,17 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         public async Task SearchRouteNode()
         {
+
+            var res = await _client.RetrieveCollection("RouteNodes");
+            _logger.LogInformation(res.NumberOfDocuments.ToString());
             var query = new SearchParameters
             {
                 Text = "CO",
                 QueryBy = "name"
             };
 
-           var result =  await _client.Search<RouteNode>("RouteNodes",query);
-           _logger.LogInformation(result.Found.ToString());
+            var result = await _client.Search<RouteNode>("RouteNodes", query);
+            _logger.LogInformation(result.Found.ToString());
         }
 
         public async Task ProcessDataTypesense()

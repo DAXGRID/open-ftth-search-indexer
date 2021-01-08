@@ -13,6 +13,8 @@ namespace OpenFTTH.SearchIndexer.Model
         public string houseNumberText { get; set; }
         public string position { get; set; }
         public string accessAddressDescription { get; set; }
+
+        public string roadName {get;set;}
         
 
     }
