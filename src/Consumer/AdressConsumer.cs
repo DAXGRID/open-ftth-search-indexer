@@ -191,9 +191,9 @@ namespace OpenFTTH.SearchIndexer.Consumer
             _eventDispatcher = new ToposTypedEventObservable<RouteNetworkEditOperationOccuredEvent>(loggerFactory.CreateLogger<ToposTypedEventMediator<RouteNetworkEditOperationOccuredEvent>>());
 
             var kafkaConsumer = _eventDispatcher.Config("route_network_event_" + Guid.NewGuid(), c => c.UseKafka("116.203.155.79:32339")
-                             .WithCertificate("Certificate/hetzner-dev.crt"))
+                             .WithCertificate("home/mihai/hetzner-dev.crt"))
                              .Positions(p => p.StoreInMemory(new InMemPositionsStorage()))
-                             .Topics(t => t.Subscribe("domain.route-network")) 
+                             .Topics(t => t.Subscribe("domain.route-network"))
                              .Handle(async (messages, context, token) =>
                              {
                                  foreach (var message in messages)
@@ -209,29 +209,30 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                                  {
                                                      foreach (var routeNetworkEvent in command.RouteNetworkEvents)
                                                      {
-                                                          switch (routeNetworkEvent)
-                                                          {
-                                                              case RouteNodeAdded domainEvent:
-                                                              incremantalId++;
-                                                              var node = new RouteNode{
-                                                                  id = domainEvent.NodeId,
-                                                                  incrementalId =incremantalId,
-                                                                  name = domainEvent.NamingInfo.Name
-                                                              };
-                                                              await addRouteNode(node);
-                                                              break;
+                                                         switch (routeNetworkEvent)
+                                                         {
+                                                             case RouteNodeAdded domainEvent:
+                                                                 incremantalId++;
+                                                                 var node = new RouteNode
+                                                                 {
+                                                                     id = domainEvent.NodeId,
+                                                                     incrementalId = incremantalId,
+                                                                     name = domainEvent.NamingInfo.Name
+                                                                 };
+                                                                 await addRouteNode(node);
+                                                                 break;
 
-                                                              case RouteNodeMarkedForDeletion domainEvent:
-                                                              await DeleteRouteNode(domainEvent.NodeId);
-                                                              break;
-                                                          }
+                                                             case RouteNodeMarkedForDeletion domainEvent:
+                                                                 //await DeleteRouteNode(domainEvent.NodeId);
+                                                                 break;
+                                                         }
                                                      }
                                                  }
                                              }
                                          }
                                      }
                                  }
-                             }).Start();;
+                             }).Start(); ;
 
 
         }
@@ -244,12 +245,24 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         private async Task addRouteNode(RouteNode node)
         {
-            await _client.CreateDocument<RouteNode>("RouteNodes",node);
+            await _client.CreateDocument<RouteNode>("RouteNodes", node);
         }
 
         private async Task DeleteRouteNode(Guid id)
         {
-            await _client.DeleteDocument<RouteNode>("RouteNodes",id.ToString());
+            await _client.DeleteDocument<RouteNode>("RouteNodes", id.ToString());
+        }
+
+        public async Task SearchRouteNode()
+        {
+            var query = new SearchParameters
+            {
+                Text = "CO",
+                QueryBy = "name"
+            };
+
+           var result =  await _client.Search<RouteNode>("RouteNodes",query);
+           _logger.LogInformation(result.Found.ToString());
         }
 
         public async Task ProcessDataTypesense()
@@ -258,7 +271,6 @@ namespace OpenFTTH.SearchIndexer.Consumer
             var typsenseItems = _postgresWriter.JoinTables("housenumber", "id_lokalid", _databaseSetting.ConnectionString);
             await _client.ImportDocuments("Addresses", typsenseItems, typsenseItems.Count, ImportType.Create);
         }
-
 
         private List<JsonObject> CheckObjectType(List<JsonObject> items, string tableName)
         {

@@ -40,7 +40,9 @@ namespace OpenFTTH.SearchIndexer
 
         private void OnStarted()
         {
+            _consumer.CreateRouteSchema();
             _consumer.SubscribeRouteNetwork();
+            _consumer.SearchRouteNode();
             // TODO use enviroment variable
             // _consumer.CreateTypesenseSchema();
             // var bulkSetup = true;
