@@ -180,7 +180,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
             _eventDispatcher = new ToposTypedEventObservable<RouteNetworkEditOperationOccuredEvent>(loggerFactory.CreateLogger<ToposTypedEventMediator<RouteNetworkEditOperationOccuredEvent>>());
 
-            var kafkaConsumer = _eventDispatcher.Config("route_network_event_" + Guid.NewGuid(), c => c.UseKafka("")
+            var kafkaConsumer = _eventDispatcher.Config("route_network_event_" + Guid.NewGuid(), c => c.UseKafka("116.203.155.79:32339")
                              .WithCertificate("/home/mihai/Certificates/hetzner-dev.crt"))
                              .Positions(p => p.StoreInMemory(new InMemPositionsStorage()))
                              .Topics(t => t.Subscribe("domain.route-network"))
@@ -248,21 +248,20 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
             var res = await _client.RetrieveCollection("RouteNodes");
             _logger.LogInformation(res.NumberOfDocuments.ToString());
-            var query = new SearchParameters
-            {
-                Text = "CO",
-                QueryBy = "name"
-            };
+            // var query = new SearchParameters
+            // {
+            //     Text = "CO",
+            //     QueryBy = "name"
+            // };
 
-            var result = await _client.Search<RouteNode>("RouteNodes", query);
-            _logger.LogInformation(result.Found.ToString());
+            // var result = await _client.Search<RouteNode>("RouteNodes", query);
+            // _logger.LogInformation(result.Found.ToString());
         }
 
         public async Task ProcessDataTypesense()
         {
-
             var typsenseItems = _postgresWriter.JoinTables("housenumber", "id_lokalid", _databaseSetting.ConnectionString);
-            await _client.ImportDocuments("Addresses", typsenseItems, typsenseItems.Count, ImportType.Create);
+            //await _client.ImportDocuments("Addresses", typsenseItems, typsenseItems.Count, ImportType.Create);
         }
 
         private List<JsonObject> CheckObjectType(List<JsonObject> items, string tableName)
@@ -316,7 +315,6 @@ namespace OpenFTTH.SearchIndexer.Consumer
                           }
                       }).Start();
 
-            _logger.LogInformation("It got here");
         }
 
 

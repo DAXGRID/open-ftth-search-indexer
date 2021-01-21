@@ -4,7 +4,6 @@ namespace OpenFTTH.SearchIndexer.Model
     {
         public string id_lokalId { get; set; }
         public string door { get; set; }
-        public string doorPoint { get; set; }
         public string floor { get; set; }
         public string unitAddressDescription { get; set; }
         public string houseNumberId { get; set; }

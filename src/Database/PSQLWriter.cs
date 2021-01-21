@@ -85,7 +85,7 @@ namespace OpenFTTH.SearchIndexer.Database
             var stringList = new List<string>();
             var geometryFactory = new GeometryFactory();
             var rdr = new WKTWriter();
-            
+
             var tableCommandText = @$"SELECT * FROM adresselist a INNER JOIN husnummerlist h ON (a.{adresseColummn} = h.{houseColumn});";
             using (NpgsqlConnection connection = new NpgsqlConnection(textConnection))
             {
@@ -95,28 +95,31 @@ namespace OpenFTTH.SearchIndexer.Database
                 {
                     while (reader.Read())
                     {
-                        var adress = new Address{
+                        _logger.LogInformation("it got to the creation of objects");
+                        _logger.LogInformation(reader.HasRows.ToString());
+                        Address address = new Address
+                        {
                             id_lokalId = reader.GetString(0),
                             door = reader.GetValue(1).ToString(),
-                            doorPoint = reader.GetValue(2).ToString(),
-                            floor = reader.GetValue(3).ToString(),
-                            unitAddressDescription = reader.GetString(4),
-                            houseNumberId = reader.GetString(5),
-                            status = Int32.Parse(reader.GetValue(7).ToString()),
-                            houseNumberText = reader.GetString(8),
-                            houseNumberDirection = reader.GetString(9),
-                            accessAddressDescription = reader.GetString(10),
-                            position = rdr.Write((Geometry)reader.GetValue(11)),
-                            roadName = reader.GetString(12)
+                            floor = reader.GetValue(2).ToString(),
+                            unitAddressDescription = reader.GetString(3),
+                            houseNumberId = reader.GetString(4),
+                            status = Int32.Parse(reader.GetValue(6).ToString()),
+                            houseNumberText = reader.GetString(7),
+                            houseNumberDirection = reader.GetString(8),
+                            accessAddressDescription = reader.GetString(9),
+                            position = rdr.Write((Geometry)reader.GetValue(10)),
+                            roadName = reader.GetValue(11).ToString()
                         };
-                        items.Add(adress);
+                        _logger.LogInformation(address.status.ToString());
 
+                        items.Add(address);
                     }
                 }
             }
             _logger.LogInformation("Tables were joined");
-             return items;
-            
+            return items;
+
         }
 
         private void InsertOnConflict(string tempTable, string table, string[] columns, NpgsqlConnection conn)
