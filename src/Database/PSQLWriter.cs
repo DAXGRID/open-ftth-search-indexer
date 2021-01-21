@@ -95,7 +95,6 @@ namespace OpenFTTH.SearchIndexer.Database
                 {
                     while (reader.Read())
                     {
-                        _logger.LogInformation("it got to the creation of objects");
                         _logger.LogInformation(reader.HasRows.ToString());
                         Address address = new Address
                         {
@@ -111,9 +110,10 @@ namespace OpenFTTH.SearchIndexer.Database
                             position = rdr.Write((Geometry)reader.GetValue(10)),
                             roadName = reader.GetValue(11).ToString()
                         };
-                        _logger.LogInformation(address.status.ToString());
 
                         items.Add(address);
+                        _logger.LogInformation(items.Count.ToString());
+
                     }
                 }
             }

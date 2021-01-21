@@ -61,7 +61,6 @@ namespace OpenFTTH.SearchIndexer.Consumer
                 {
                     new Field("id_lokalId", "string", false),
                     new Field("door", "string", false),
-                    new Field("doorPoint", "string", false),
                     new Field("floor", "string", false),
                     new Field("unitAddressDescription", "string", false),
                     new Field("houseNumberId", "string", false),
@@ -261,7 +260,8 @@ namespace OpenFTTH.SearchIndexer.Consumer
         public async Task ProcessDataTypesense()
         {
             var typsenseItems = _postgresWriter.JoinTables("housenumber", "id_lokalid", _databaseSetting.ConnectionString);
-            //await _client.ImportDocuments("Addresses", typsenseItems, typsenseItems.Count, ImportType.Create);
+            _logger.LogInformation("Number of objects " + typsenseItems.Count.ToString());
+            await _client.ImportDocuments("Addresses", typsenseItems, typsenseItems.Count, ImportType.Create);
         }
 
         private List<JsonObject> CheckObjectType(List<JsonObject> items, string tableName)
