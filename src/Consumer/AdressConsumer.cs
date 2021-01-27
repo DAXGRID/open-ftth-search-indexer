@@ -179,8 +179,8 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
             _eventDispatcher = new ToposTypedEventObservable<RouteNetworkEditOperationOccuredEvent>(loggerFactory.CreateLogger<ToposTypedEventMediator<RouteNetworkEditOperationOccuredEvent>>());
 
-            var kafkaConsumer = _eventDispatcher.Config("route_network_event_" + Guid.NewGuid(), c => c.UseKafka("116.203.155.79:32339")
-                             .WithCertificate("/home/mihai/Certificates/hetzner-dev.crt"))
+            var kafkaConsumer = _eventDispatcher.Config("route_network_event_" + Guid.NewGuid(), c => c.UseKafka("")
+                             .WithCertificate("/home/mihai/Certificates/kafka-aura-prod.crt"))
                              .Positions(p => p.StoreInMemory(new InMemPositionsStorage()))
                              .Topics(t => t.Subscribe("domain.route-network"))
                              .Handle(async (messages, context, token) =>
@@ -202,6 +202,8 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                                          {
                                                              case RouteNodeAdded domainEvent:
                                                                  incremantalId++;
+                                                                 if(domainEvent.NamingInfo.Name!=null)
+                                                                 {
                                                                  var node = new RouteNode
                                                                  {
                                                                      id = domainEvent.NodeId,
@@ -209,6 +211,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                                                      name = domainEvent.NamingInfo.Name
                                                                  };
                                                                  await addRouteNode(node);
+                                                                 }
                                                                  break;
 
                                                              case RouteNodeMarkedForDeletion domainEvent:
@@ -240,21 +243,6 @@ namespace OpenFTTH.SearchIndexer.Consumer
         private async Task DeleteRouteNode(Guid id)
         {
             await _client.DeleteDocument<RouteNode>("RouteNodes", id.ToString());
-        }
-
-        public async Task SearchRouteNode()
-        {
-
-            var res = await _client.RetrieveCollection("RouteNodes");
-            _logger.LogInformation(res.NumberOfDocuments.ToString());
-            // var query = new SearchParameters
-            // {
-            //     Text = "CO",
-            //     QueryBy = "name"
-            // };
-
-            // var result = await _client.Search<RouteNode>("RouteNodes", query);
-            // _logger.LogInformation(result.Found.ToString());
         }
 
         public async Task ProcessDataTypesense()

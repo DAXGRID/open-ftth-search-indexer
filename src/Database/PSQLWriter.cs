@@ -95,7 +95,6 @@ namespace OpenFTTH.SearchIndexer.Database
                 {
                     while (reader.Read())
                     {
-                        _logger.LogInformation(reader.HasRows.ToString());
                         Address address = new Address
                         {
                             id_lokalId = reader.GetString(0),
@@ -112,7 +111,6 @@ namespace OpenFTTH.SearchIndexer.Database
                         };
 
                         items.Add(address);
-                        _logger.LogInformation(items.Count.ToString());
 
                     }
                 }
