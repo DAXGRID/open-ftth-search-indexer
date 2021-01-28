@@ -43,22 +43,25 @@ namespace OpenFTTH.SearchIndexer
             _consumer.CreateTypesenseSchema();
             _consumer.CreateRouteSchema();
             _consumer.SubscribeRouteNetwork();
-            
+
             //TODO use enviroment variable
-            
+
             var bulkSetup = true;
             if (bulkSetup)
             {
                 _consumer.SubscribeBulk();
-                while (!_consumer.IsBulkFinished() && !_isStopping) {
+                while (!_consumer.IsBulkFinished() && !_isStopping)
+                {
                     Thread.Sleep(1000);
                 }
+                
+
                 _consumer.ProcessDataTypesense();
                 _consumer.Dispose();
             }
             _consumer.Dispose();
             //_consumer.Subscribe();
-            
+
         }
 
         private void OnStopped()

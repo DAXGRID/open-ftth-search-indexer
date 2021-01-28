@@ -6,5 +6,6 @@ namespace OpenFTTH.SearchIndexer.Model
         public Guid id {get;set;}
         public int  incrementalId {get;set;}
         public string name {get;set;}
+        public string coordinates {get;set;}
     }
 }

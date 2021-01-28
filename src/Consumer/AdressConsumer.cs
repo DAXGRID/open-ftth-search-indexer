@@ -86,7 +86,8 @@ namespace OpenFTTH.SearchIndexer.Consumer
                 {
                     new Field("id","string",false),
                     new Field("incrementalId","int32",false),
-                    new Field("name","string",false)
+                    new Field("name","string",false),
+                    new Field("coordinates","string",false)
                 },
                 DefaultSortingField = "incrementalId"
             };
@@ -202,15 +203,16 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                                          {
                                                              case RouteNodeAdded domainEvent:
                                                                  incremantalId++;
-                                                                 if(domainEvent.NamingInfo.Name!=null)
+                                                                 if (domainEvent.NamingInfo.Name != null)
                                                                  {
-                                                                 var node = new RouteNode
-                                                                 {
-                                                                     id = domainEvent.NodeId,
-                                                                     incrementalId = incremantalId,
-                                                                     name = domainEvent.NamingInfo.Name
-                                                                 };
-                                                                 await addRouteNode(node);
+                                                                     var node = new RouteNode
+                                                                     {
+                                                                         id = domainEvent.NodeId,
+                                                                         incrementalId = incremantalId,
+                                                                         name = domainEvent.NamingInfo.Name,
+                                                                         coordinates = domainEvent.Geometry
+                                                                     };
+                                                                     await addRouteNode(node);
                                                                  }
                                                                  break;
 
