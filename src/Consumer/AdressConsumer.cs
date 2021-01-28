@@ -12,6 +12,7 @@ using System.Timers;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using OpenFTTH.Events.RouteNetwork;
+using OpenFTTH.Events.Core.Infos;
 using DAX.EventProcessing.Dispatcher;
 using DAX.EventProcessing.Dispatcher.Topos;
 using Serilog;
@@ -220,12 +221,9 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                                                  await DeleteRouteNode(domainEvent.NodeId);
                                                                  break;
                                                              case RouteNodeGeometryModified domainEvent :
-                                                                 var geometryUpdate = new RouteNode
-                                                                 {
-                                                                     coordinates = domainEvent.Geometry
-                                                                 };
-                                                                 await UpdateNode(domainEvent.NodeId,geometryUpdate);
-                                                                 break;    
+                                                                 await UpdateGeometryNode(domainEvent.NodeId,domainEvent.Geometry);
+                                                                 break;
+
                                                          }
                                                      }
                                                  }
@@ -233,7 +231,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                          }
                                      }
                                  }
-                             }).Start(); ;
+                             }).Start(); 
 
 
         }
@@ -254,8 +252,10 @@ namespace OpenFTTH.SearchIndexer.Consumer
             await _client.DeleteDocument<RouteNode>("RouteNodes", id.ToString());
         }
 
-        private async Task UpdateNode(Guid id, RouteNode node)
+        private async Task UpdateGeometryNode(Guid id, string geometry)
         {
+            var node = await _client.RetrieveDocument<RouteNode>("RouteNodes",id.ToString());
+            node.coordinates = geometry;
             await _client.UpdateDocument<RouteNode>("RouteNodes",id.ToString(),node);
         }
 
@@ -264,6 +264,15 @@ namespace OpenFTTH.SearchIndexer.Consumer
             var typsenseItems = _postgresWriter.JoinTables("housenumber", "id_lokalid", _databaseSetting.ConnectionString);
             _logger.LogInformation("Number of objects " + typsenseItems.Count.ToString());
             await _client.ImportDocuments("Addresses", typsenseItems, typsenseItems.Count, ImportType.Create);
+        }
+
+        public async Task UpdateNode()
+        {
+             var n = new RouteNode 
+            {
+                name = "mihai"
+            };
+            await _client.UpdateDocument("RouteNodes","8b1952f4-8948-435b-8892-3000a674ae7a",n);
         }
 
         private List<JsonObject> CheckObjectType(List<JsonObject> items, string tableName)

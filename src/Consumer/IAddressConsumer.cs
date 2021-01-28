@@ -12,6 +12,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
         Task ProcessDataTypesense();
         void CreateTypesenseSchema();
         void CreateRouteSchema();
+        Task UpdateNode();
         
     }
 }
