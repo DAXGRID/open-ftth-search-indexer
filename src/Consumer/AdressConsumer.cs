@@ -219,6 +219,13 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                                              case RouteNodeMarkedForDeletion domainEvent:
                                                                  await DeleteRouteNode(domainEvent.NodeId);
                                                                  break;
+                                                             case RouteNodeGeometryModified domainEvent :
+                                                                 var geometryUpdate = new RouteNode
+                                                                 {
+                                                                     coordinates = domainEvent.Geometry
+                                                                 };
+                                                                 await UpdateNode(domainEvent.NodeId,geometryUpdate);
+                                                                 break;    
                                                          }
                                                      }
                                                  }
@@ -245,6 +252,11 @@ namespace OpenFTTH.SearchIndexer.Consumer
         private async Task DeleteRouteNode(Guid id)
         {
             await _client.DeleteDocument<RouteNode>("RouteNodes", id.ToString());
+        }
+
+        private async Task UpdateNode(Guid id, RouteNode node)
+        {
+            await _client.UpdateDocument<RouteNode>("RouteNodes",id.ToString(),node);
         }
 
         public async Task ProcessDataTypesense()
