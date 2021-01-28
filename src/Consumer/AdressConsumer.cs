@@ -29,6 +29,8 @@ namespace OpenFTTH.SearchIndexer.Consumer
         private readonly KafkaSetting _kafkaSetting;
         private readonly DatabaseSetting _databaseSetting;
 
+        private readonly TypesenseSetting _typesenseSetting;
+
         private ILogger<AddressConsumer> _logger;
         private readonly IPostgresWriter _postgresWriter;
 
@@ -39,13 +41,14 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         private IToposTypedEventObservable<RouteNetworkEditOperationOccuredEvent> _eventDispatcher;
 
-        public AddressConsumer(ITypesenseClient client, ILogger<AddressConsumer> logger, IPostgresWriter postgresWriter, IOptions<KafkaSetting> kafkaSetting, IOptions<DatabaseSetting> databaseSetting)
+        public AddressConsumer(ITypesenseClient client, ILogger<AddressConsumer> logger, IPostgresWriter postgresWriter, IOptions<KafkaSetting> kafkaSetting, IOptions<DatabaseSetting> databaseSetting, IOptions<TypesenseSetting> typesenseSetting)
         {
             _client = client;
             _logger = logger;
             _postgresWriter = postgresWriter;
             _kafkaSetting = kafkaSetting.Value;
             _databaseSetting = databaseSetting.Value;
+            _typesenseSetting = typesenseSetting.Value;
         }
 
         public void Subscribe()
@@ -57,7 +60,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
         {
             var schema = new Schema
             {
-                Name = "Addresses",
+                Name = _typesenseSetting.AddressCollection,
                 Fields = new List<Field>
                 {
                     new Field("id_lokalId", "string", false),
@@ -82,7 +85,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
         {
             var schema = new Schema
             {
-                Name = "RouteNodes",
+                Name = _typesenseSetting.NodeCollection,
                 Fields = new List<Field>
                 {
                     new Field("id","string",false),
@@ -247,33 +250,33 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         private async Task addRouteNode(RouteNode node)
         {
-            await _client.CreateDocument<RouteNode>("RouteNodes", node);
+            await _client.CreateDocument<RouteNode>(_typesenseSetting.NodeCollection, node);
         }
 
         private async Task DeleteRouteNode(Guid id)
         {
-            await _client.DeleteDocument<RouteNode>("RouteNodes", id.ToString());
+            await _client.DeleteDocument<RouteNode>(_typesenseSetting.NodeCollection, id.ToString());
         }
 
         private async Task UpdateGeometryNode(Guid id, string geometry)
         {
-            var node = await _client.RetrieveDocument<RouteNode>("RouteNodes", id.ToString());
+            var node = await _client.RetrieveDocument<RouteNode>(_typesenseSetting.NodeCollection, id.ToString());
             node.coordinates = geometry;
-            await _client.UpdateDocument<RouteNode>("RouteNodes", id.ToString(), node);
+            await _client.UpdateDocument<RouteNode>(_typesenseSetting.NodeCollection, id.ToString(), node);
         }
 
         private async Task UpdateNameNode(Guid id, string name)
         {
-            var node = await _client.RetrieveDocument<RouteNode>("RouteNodes", id.ToString());
+            var node = await _client.RetrieveDocument<RouteNode>(_typesenseSetting.NodeCollection, id.ToString());
             node.name = name;
-            await _client.UpdateDocument<RouteNode>("RouteNodes", id.ToString(), node);
+            await _client.UpdateDocument<RouteNode>(_typesenseSetting.NodeCollection, id.ToString(), node);
         }
-        
+
         public async Task ProcessDataTypesense()
         {
             var typesenseItems = _postgresWriter.JoinTables("housenumber", "id_lokalid", _databaseSetting.ConnectionString);
             _logger.LogInformation("Number of objects " + typesenseItems.Count.ToString());
-            await _client.ImportDocuments("Addresses", typesenseItems, typesenseItems.Count, ImportType.Create);
+            await _client.ImportDocuments(_typesenseSetting.AddressCollection, typesenseItems, typesenseItems.Count, ImportType.Create);
         }
 
         public async Task UpdateNode()
@@ -282,7 +285,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
             {
                 name = "mihai"
             };
-            await _client.UpdateDocument("RouteNodes", "8b1952f4-8948-435b-8892-3000a674ae7a", n);
+            await _client.UpdateDocument(_typesenseSetting.NodeCollection, "8b1952f4-8948-435b-8892-3000a674ae7a", n);
         }
 
         private List<JsonObject> CheckObjectType(List<JsonObject> items, string tableName)
