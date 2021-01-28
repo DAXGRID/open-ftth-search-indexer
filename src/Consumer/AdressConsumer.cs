@@ -220,8 +220,11 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                                              case RouteNodeMarkedForDeletion domainEvent:
                                                                  await DeleteRouteNode(domainEvent.NodeId);
                                                                  break;
-                                                             case RouteNodeGeometryModified domainEvent :
-                                                                 await UpdateGeometryNode(domainEvent.NodeId,domainEvent.Geometry);
+                                                             case RouteNodeGeometryModified domainEvent:
+                                                                 await UpdateGeometryNode(domainEvent.NodeId, domainEvent.Geometry);
+                                                                 break;
+                                                             case OpenFTTH.Events.Core.NamingInfoModified domainEvent:
+                                                                 await UpdateNameNode(domainEvent.EventId, domainEvent.NamingInfo.Name);
                                                                  break;
 
                                                          }
@@ -231,7 +234,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                          }
                                      }
                                  }
-                             }).Start(); 
+                             }).Start();
 
 
         }
@@ -254,25 +257,32 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         private async Task UpdateGeometryNode(Guid id, string geometry)
         {
-            var node = await _client.RetrieveDocument<RouteNode>("RouteNodes",id.ToString());
+            var node = await _client.RetrieveDocument<RouteNode>("RouteNodes", id.ToString());
             node.coordinates = geometry;
-            await _client.UpdateDocument<RouteNode>("RouteNodes",id.ToString(),node);
+            await _client.UpdateDocument<RouteNode>("RouteNodes", id.ToString(), node);
         }
 
+        private async Task UpdateNameNode(Guid id, string name)
+        {
+            var node = await _client.RetrieveDocument<RouteNode>("RouteNodes", id.ToString());
+            node.name = name;
+            await _client.UpdateDocument<RouteNode>("RouteNodes", id.ToString(), node);
+        }
+        
         public async Task ProcessDataTypesense()
         {
-            var typsenseItems = _postgresWriter.JoinTables("housenumber", "id_lokalid", _databaseSetting.ConnectionString);
-            _logger.LogInformation("Number of objects " + typsenseItems.Count.ToString());
-            await _client.ImportDocuments("Addresses", typsenseItems, typsenseItems.Count, ImportType.Create);
+            var typesenseItems = _postgresWriter.JoinTables("housenumber", "id_lokalid", _databaseSetting.ConnectionString);
+            _logger.LogInformation("Number of objects " + typesenseItems.Count.ToString());
+            await _client.ImportDocuments("Addresses", typesenseItems, typesenseItems.Count, ImportType.Create);
         }
 
         public async Task UpdateNode()
         {
-             var n = new RouteNode 
+            var n = new RouteNode
             {
                 name = "mihai"
             };
-            await _client.UpdateDocument("RouteNodes","8b1952f4-8948-435b-8892-3000a674ae7a",n);
+            await _client.UpdateDocument("RouteNodes", "8b1952f4-8948-435b-8892-3000a674ae7a", n);
         }
 
         private List<JsonObject> CheckObjectType(List<JsonObject> items, string tableName)
