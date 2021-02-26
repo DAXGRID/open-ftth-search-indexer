@@ -174,7 +174,7 @@ namespace OpenFTTH.SearchIndexer.Database
                     writer.StartRow();
                     foreach (var column in columns)
                     {
-                        if (column == "position")
+                        if (column == "position" )
                         {
                             // TODO add environment variable
                             rdr.DefaultSRID = 25832;

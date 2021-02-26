@@ -40,12 +40,11 @@ namespace OpenFTTH.SearchIndexer
 
         private void OnStarted()
         {
-            _consumer.UpdateNode();
             // _consumer.CreateTypesenseSchema();
-            // _consumer.CreateRouteSchema();
-            // _consumer.SubscribeRouteNetwork();
+             _consumer.CreateRouteSchema();
+             _consumer.SubscribeRouteNetwork();
 
-            // //TODO use enviroment variable
+            //TODO use enviroment variable
 
             // var bulkSetup = true;
             // if (bulkSetup)
@@ -55,10 +54,10 @@ namespace OpenFTTH.SearchIndexer
             //     {
             //         Thread.Sleep(1000);
             //     }
-            //     _consumer.ProcessDataTypesense();
+            //     // _consumer.ProcessDataTypesense();
             //     _consumer.Dispose();
             // }
-            // _consumer.Dispose();
+            _consumer.Dispose();
             // //_consumer.Subscribe();
 
         }

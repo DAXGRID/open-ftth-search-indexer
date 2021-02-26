@@ -54,16 +54,20 @@ namespace OpenFTTH.SearchIndexer.Internal
 
         private static void ConfigureServices(IHostBuilder hostBuilder, IConfigurationRoot configuration)
         {
+            var apiKey = "Hu52dwsas2AdxdE";
+            var host = "localhost";
+            var port = "8108";
+
             var node = new Node();
-            node.Host = "localhost";
-            node.Port = "8108";
+            node.Host = host;
+            node.Port = port;
             node.Protocol = "http";
             hostBuilder.ConfigureServices((hostContext, services) =>
             {
                 services.AddHostedService<Startup>();
                 services.AddTypesenseClient(options =>
                 {
-                    options.ApiKey = "Hu52dwsas2AdxdE";
+                    options.ApiKey = apiKey;
                     options.Nodes = new List<Node>();
                     options.Nodes.Add(node);
                 });
@@ -74,6 +78,8 @@ namespace OpenFTTH.SearchIndexer.Internal
 
                 services.Configure<DatabaseSetting>(databaseSettings =>
                                               configuration.GetSection("Database").Bind(databaseSettings));
+                services.Configure<TypesenseSetting>(typesenseSettings =>
+                                              configuration.GetSection("Typesense").Bind(typesenseSettings));                              
 
                 services.AddLogging(configure =>
                 {

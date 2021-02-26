@@ -83,9 +83,10 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         public void CreateRouteSchema()
         {
+            _logger.LogInformation(_typesenseSetting.NodeCollection.ToString());
             var schema = new Schema
             {
-                Name = _typesenseSetting.NodeCollection,
+                Name = _typesenseSetting.NodeCollection.ToString(),
                 Fields = new List<Field>
                 {
                     new Field("id","string",false),
@@ -184,7 +185,7 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
             _eventDispatcher = new ToposTypedEventObservable<RouteNetworkEditOperationOccuredEvent>(loggerFactory.CreateLogger<ToposTypedEventMediator<RouteNetworkEditOperationOccuredEvent>>());
 
-            var kafkaConsumer = _eventDispatcher.Config("route_network_event_" + Guid.NewGuid(), c => c.UseKafka("")
+            var kafkaConsumer = _eventDispatcher.Config("route_network_event_" + Guid.NewGuid(), c => c.UseKafka("20.73.229.67:9094")
                              .WithCertificate("/home/mihai/Certificates/kafka-aura-prod.crt"))
                              .Positions(p => p.StoreInMemory(new InMemPositionsStorage()))
                              .Topics(t => t.Subscribe("domain.route-network"))
@@ -203,33 +204,47 @@ namespace OpenFTTH.SearchIndexer.Consumer
                                                  {
                                                      foreach (var routeNetworkEvent in command.RouteNetworkEvents)
                                                      {
-                                                         switch (routeNetworkEvent)
+                                                         try
                                                          {
-                                                             case RouteNodeAdded domainEvent:
-                                                                 incremantalId++;
-                                                                 if (domainEvent.NamingInfo.Name != null)
-                                                                 {
-                                                                     var node = new RouteNode
+
+
+                                                             switch (routeNetworkEvent)
+                                                             {
+                                                                 case RouteNodeAdded domainEvent:
+                                                                     incremantalId++;
+                                                                     if (domainEvent.NamingInfo.Name != null)
                                                                      {
-                                                                         id = domainEvent.NodeId,
-                                                                         incrementalId = incremantalId,
-                                                                         name = domainEvent.NamingInfo.Name,
-                                                                         coordinates = domainEvent.Geometry
-                                                                     };
-                                                                     await addRouteNode(node);
-                                                                 }
-                                                                 break;
+                                                                         var node = new RouteNode
+                                                                         {
+                                                                             id = domainEvent.NodeId,
+                                                                             incrementalId = incremantalId,
+                                                                             name = domainEvent.NamingInfo.Name,
+                                                                             coordinates = domainEvent.Geometry
+                                                                         };
+                                                                         if (node != null)
+                                                                         {
+                                                                             await addRouteNode(node);
+                                                                         }
 
-                                                             case RouteNodeMarkedForDeletion domainEvent:
-                                                                 await DeleteRouteNode(domainEvent.NodeId);
-                                                                 break;
-                                                             case RouteNodeGeometryModified domainEvent:
-                                                                 await UpdateGeometryNode(domainEvent.NodeId, domainEvent.Geometry);
-                                                                 break;
-                                                             case OpenFTTH.Events.Core.NamingInfoModified domainEvent:
-                                                                 await UpdateNameNode(domainEvent.EventId, domainEvent.NamingInfo.Name);
-                                                                 break;
+                                                                     }
+                                                                     break;
 
+                                                                 case RouteNodeMarkedForDeletion domainEvent:
+                                                                     await DeleteRouteNode(domainEvent.NodeId);
+                                                                     break;
+                                                                 case RouteNodeGeometryModified domainEvent:
+                                                                     await UpdateGeometryNode(domainEvent.NodeId, domainEvent.Geometry);
+                                                                     break;
+                                                                 case OpenFTTH.Events.Core.NamingInfoModified domainEvent:
+                                                                     await UpdateNameNode(domainEvent.EventId, domainEvent.NamingInfo.Name);
+                                                                     break;
+
+                                                             }
+
+                                                         }
+                                                         catch(System.NullReferenceException e)
+                                                         {
+                                                            _logger.LogInformation("exception caught");
                                                          }
                                                      }
                                                  }
@@ -250,7 +265,8 @@ namespace OpenFTTH.SearchIndexer.Consumer
 
         private async Task addRouteNode(RouteNode node)
         {
-            await _client.CreateDocument<RouteNode>(_typesenseSetting.NodeCollection, node);
+            await _client.UpsertDocument<RouteNode>(_typesenseSetting.NodeCollection, node);
+
         }
 
         private async Task DeleteRouteNode(Guid id)
